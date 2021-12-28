@@ -10,6 +10,8 @@ import net.arcanamod.aspects.AspectUtils;
 import net.arcanamod.aspects.UndecidedAspectStack;
 import net.arcanamod.aspects.handlers.AspectHandler;
 import net.arcanamod.aspects.handlers.AspectHolder;
+import net.arcanamod.systems.research.Parent;
+import net.arcanamod.util.StreamUtils;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.crafting.IRecipeSerializer;

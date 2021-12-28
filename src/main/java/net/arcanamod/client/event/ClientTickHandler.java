@@ -1,5 +1,6 @@
 package net.arcanamod.client.event;
 
+import net.arcanamod.ArcanaSounds;
 import net.arcanamod.aspects.Aspect;
 import net.arcanamod.aspects.AspectStack;
 import net.arcanamod.aspects.AspectUtils;

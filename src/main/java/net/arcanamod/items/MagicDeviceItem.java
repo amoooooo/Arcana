@@ -8,6 +8,7 @@ import net.arcanamod.aspects.AspectStack;
 import net.arcanamod.aspects.AspectUtils;
 import net.arcanamod.aspects.Aspects;
 import net.arcanamod.aspects.handlers.*;
+import net.arcanamod.capabilities.Researcher;
 import net.arcanamod.client.render.particles.AspectHelixParticleData;
 import net.arcanamod.items.attachment.Cap;
 import net.arcanamod.items.attachment.Core;
