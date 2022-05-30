@@ -1,49 +1,47 @@
 package net.arcanamod.client.research.impls;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
-import com.mojang.blaze3d.systems.RenderSystem;
+import com.google.common.collect.Streams;
+import com.mojang.blaze3d.platform.Lighting;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.arcanamod.client.research.RequirementRenderer;
 import net.arcanamod.systems.research.impls.ItemTagRequirement;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ItemRenderer;
-import net.minecraft.client.renderer.RenderHelper;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TextFormatting;
-import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.client.renderer.entity.ItemRenderer;
+import net.minecraft.core.Registry;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 
-import java.util.ArrayList;
 import java.util.List;
-
-import static net.minecraft.client.util.ITooltipFlag.TooltipFlags.ADVANCED;
-import static net.minecraft.client.util.ITooltipFlag.TooltipFlags.NORMAL;
+import static net.minecraft.world.item.TooltipFlag.Default.ADVANCED;
+import static net.minecraft.world.item.TooltipFlag.Default.NORMAL;
 
 public class ItemTagRequirementRenderer implements RequirementRenderer<ItemTagRequirement>{
 	
-	public void render(MatrixStack matrices, int x, int y, ItemTagRequirement requirement, int ticks, float partialTicks, PlayerEntity player){
+	public void render(PoseStack matrices, int x, int y, ItemTagRequirement requirement, int ticks, float partialTicks, Player player){
 		// pick an item
-		List<Item> items = new ArrayList<>(requirement.getTag().getAllElements());
+		List<Item> items = Streams.stream(Registry.ITEM.getTagOrEmpty(requirement.getTag())).map(itemHolder -> itemHolder.value()).toList();
 		ItemStack stack = new ItemStack(items.get((ticks / 30) % items.size()));
-		
-		RenderHelper.enableStandardItemLighting();
-		RenderSystem.disableLighting();
+
+		Lighting.setupForFlatItems();
 		ItemRenderer renderer = Minecraft.getInstance().getItemRenderer();
-		renderer.renderItemAndEffectIntoGUI(stack, x, y);
+		renderer.renderAndDecorateItem(stack, x, y);
 	}
 	
-	public List<ITextComponent> tooltip(ItemTagRequirement requirement, PlayerEntity player){
+	public List<Component> tooltip(ItemTagRequirement requirement, Player player){
 		// pick an item
-		List<Item> items = new ArrayList<>(requirement.getTag().getAllElements());
-		ItemStack stack = new ItemStack(items.get((player.ticksExisted / 30) % items.size()));
+		List<Item> items = Streams.stream(Registry.ITEM.getTagOrEmpty(requirement.getTag())).map(itemHolder -> itemHolder.value()).toList();
+		ItemStack stack = new ItemStack(items.get((player.tickCount / 30) % items.size()));
 		
-		List<ITextComponent> tooltip = stack.getTooltip(Minecraft.getInstance().player, Minecraft.getInstance().gameSettings.advancedItemTooltips ? ADVANCED : NORMAL);
+		List<net.minecraft.network.chat.Component> tooltip = stack.getTooltipLines(Minecraft.getInstance().player, Minecraft.getInstance().options.advancedItemTooltips ? ADVANCED : NORMAL);
 		if(requirement.getAmount() != 0)
-			tooltip.set(0, new TranslationTextComponent("requirement.item.num", requirement.getAmount(), tooltip.get(0)));
+			tooltip.set(0, new TranslatableComponent("requirement.item.num", requirement.getAmount(), tooltip.get(0)));
 		else
-			tooltip.set(0, new TranslationTextComponent("requirement.item.have", tooltip.get(0)));
-		tooltip.add(new TranslationTextComponent("requirement.tag.accepts_any", requirement.getTagName().toString()).mergeStyle(TextFormatting.DARK_GRAY));
+			tooltip.set(0, new TranslatableComponent("requirement.item.have", tooltip.get(0)));
+		tooltip.add(new TranslatableComponent("requirement.tag.accepts_any", requirement.getTagName().toString()).withStyle(ChatFormatting.DARK_GRAY));
 		return tooltip;
 	}
 	

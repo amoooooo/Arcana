@@ -1,12 +1,11 @@
 package net.arcanamod.client.render;
 
-import mcp.MethodsReturnNonnullByDefault;
 import net.arcanamod.Arcana;
 import net.arcanamod.client.model.WillowEntityModel;
 import net.arcanamod.entities.SpiritEntity;
-import net.minecraft.client.renderer.entity.EntityRendererManager;
-import net.minecraft.client.renderer.entity.MobRenderer;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.client.renderer.entity.*;
+import net.minecraft.resources.ResourceLocation;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -16,12 +15,17 @@ public class WillowSpiritRenderer extends MobRenderer<SpiritEntity, WillowEntity
     protected static final ResourceLocation TEXTURE = new ResourceLocation(Arcana.MODID,
             "textures/entity/willow_spirit.png");
 
-    public WillowSpiritRenderer(EntityRendererManager renderManagerIn) {
+    public WillowSpiritRenderer(EntityRendererProvider.Context renderManagerIn) {
         super(renderManagerIn, new WillowEntityModel<>(), 0.5f);
     }
 
+    /**
+     * Returns the location of an entity's texture.
+     *
+     * @param pEntity
+     */
     @Override
-    public ResourceLocation getEntityTexture(SpiritEntity entity) {
+    public ResourceLocation getTextureLocation(SpiritEntity pEntity) {
         return TEXTURE;
     }
 }

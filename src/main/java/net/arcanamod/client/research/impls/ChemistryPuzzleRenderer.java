@@ -1,33 +1,33 @@
 package net.arcanamod.client.research.impls;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.arcanamod.Arcana;
 import net.arcanamod.aspects.Aspect;
 import net.arcanamod.client.gui.ClientUiUtil;
 import net.arcanamod.client.research.PuzzleRenderer;
 import net.arcanamod.containers.slots.AspectSlot;
 import net.arcanamod.systems.research.impls.Chemistry;
-import net.minecraft.client.gui.AbstractGui;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.container.Slot;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.gui.GuiComponent;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.Slot;
 
 import java.util.List;
 
 import static net.arcanamod.aspects.AspectUtils.areAspectsConnected;
 import static net.arcanamod.client.gui.ClientUiUtil.drawTexturedModalRect;
 
-public class ChemistryPuzzleRenderer extends AbstractGui implements PuzzleRenderer<Chemistry>{
+public class ChemistryPuzzleRenderer extends GuiComponent implements PuzzleRenderer<Chemistry>{
 	
 	private static final ResourceLocation TEX = new ResourceLocation(Arcana.MODID, "textures/gui/research/chemistry_overlay.png");
 	
-	public void render(MatrixStack stack, Chemistry puzzle, List<AspectSlot> puzzleSlots, List<Slot> puzzleItemSlots, int screenWidth, int screenHeight, int mouseX, int mouseY, PlayerEntity player){
+	public void render(PoseStack stack, Chemistry puzzle, List<AspectSlot> puzzleSlots, List<Slot> puzzleItemSlots, int screenWidth, int screenHeight, int mouseX, int mouseY, Player player){
 		drawPaper(stack, screenWidth, screenHeight);
 		// how to generate a hexagonal grid?
 		// 20x20 per hex
 		// +23x, +-18y moving right
 		// +11x on odd rows
-		mc().getTextureManager().bindTexture(TEX);
+		mc().getTextureManager().bindForSetup(TEX);
 		int gridWidth = 8, gridHeight = 6;
 		for(int y = 0; y < gridHeight; y++){
 			for(int x = 0; x < gridWidth; x++){
@@ -39,15 +39,15 @@ public class ChemistryPuzzleRenderer extends AbstractGui implements PuzzleRender
 				Aspect slot = puzzle.getAspectInSlot(index);
 				if(slot != null){
 					ClientUiUtil.renderAspect(stack, slot, scX + 2, scY + 2);
-					mc().getTextureManager().bindTexture(TEX);
+					mc().getTextureManager().bindForSetup(TEX);
 				}else{
-					mc().getTextureManager().bindTexture(TEX);
+					mc().getTextureManager().bindForSetup(TEX);
 					drawTexturedModalRect(stack, scX, scY, 0, 0, 20, 20);
 					if(puzzleSlots != null && puzzleSlots.size() > index)
 						slot = puzzleSlots.get(index).getAspect();
 				}
 				if(puzzleSlots != null && puzzleSlots.size() > 0){
-					mc().getTextureManager().bindTexture(TEX);
+					mc().getTextureManager().bindForSetup(TEX);
 					// a slot is connected to:
 					//    a slot next to it (+/-1 X)
 					//    a slot right below or right above it (+/-1 Y)
@@ -109,7 +109,7 @@ public class ChemistryPuzzleRenderer extends AbstractGui implements PuzzleRender
 		}
 	}
 	
-	public void renderAfter(MatrixStack stack, Chemistry puzzle, List<AspectSlot> puzzleSlots, List<Slot> puzzleItemSlots, int screenWidth, int screenHeight, int mouseX, int mouseY, PlayerEntity player){
+	public void renderAfter(PoseStack stack, Chemistry puzzle, List<AspectSlot> puzzleSlots, List<Slot> puzzleItemSlots, int screenWidth, int screenHeight, int mouseX, int mouseY, Player player){
 		// display node tooltip
 		int gridWidth = 8, gridHeight = 6;
 		for(Integer index : puzzle.getAspectSlotIndexes()){

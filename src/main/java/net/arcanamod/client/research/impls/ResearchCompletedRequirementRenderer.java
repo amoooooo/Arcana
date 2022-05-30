@@ -1,15 +1,14 @@
 package net.arcanamod.client.research.impls;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
-import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.arcanamod.Arcana;
 import net.arcanamod.client.research.RequirementRenderer;
 import net.arcanamod.systems.research.impls.ResearchCompletedRequirement;
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 
 import java.util.Collections;
 import java.util.List;
@@ -20,13 +19,12 @@ public class ResearchCompletedRequirementRenderer implements RequirementRenderer
 	
 	private static final ResourceLocation ICON = Arcana.arcLoc("textures/item/arcanum_open.png");
 	
-	public void render(MatrixStack matrices, int x, int y, ResearchCompletedRequirement requirement, int ticks, float partialTicks, PlayerEntity player){
-		Minecraft.getInstance().getTextureManager().bindTexture(ICON);
-		RenderSystem.color4f(1f, 1f, 1f, 1f);
+	public void render(PoseStack matrices, int x, int y, ResearchCompletedRequirement requirement, int ticks, float partialTicks, Player player){
+		Minecraft.getInstance().getTextureManager().bindForSetup(ICON);
 		drawModalRectWithCustomSizedTexture(matrices, x, y, 0, 0, 16, 16, 16, 16);
 	}
 	
-	public List<ITextComponent> tooltip(ResearchCompletedRequirement requirement, PlayerEntity player){
-		return Collections.singletonList(new TranslationTextComponent("requirement.research_completed"));
+	public List<Component> tooltip(ResearchCompletedRequirement requirement, Player player){
+		return Collections.singletonList(new TranslatableComponent("requirement.research_completed"));
 	}
 }

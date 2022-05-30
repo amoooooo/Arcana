@@ -1,6 +1,6 @@
 package net.arcanamod.client.research;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.arcanamod.client.gui.ResearchTableScreen;
 import net.arcanamod.client.research.impls.ChemistryPuzzleRenderer;
 import net.arcanamod.client.research.impls.ThaumaturgyPuzzleRenderer;
@@ -12,16 +12,16 @@ import net.arcanamod.systems.research.Puzzle;
 import net.arcanamod.systems.research.impls.Guesswork;
 import net.arcanamod.systems.research.impls.Thaumaturgy;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.container.Slot;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.gui.Font;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.Slot;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static net.minecraft.client.gui.AbstractGui.blit;
+import static net.minecraft.client.gui.GuiComponent.blit;
 
 public interface PuzzleRenderer<T extends Puzzle> {
 	ResourceLocation PAPER = new ResourceLocation(Arcana.MODID, "textures/gui/research/temp_puzzle_overlay.png");
@@ -43,22 +43,22 @@ public interface PuzzleRenderer<T extends Puzzle> {
 		return get(puzzle.type());
 	}
 	
-	void render(MatrixStack stack, T puzzle, List<AspectSlot> puzzleSlots, List<Slot> puzzleItemSlots, int screenWidth, int screenHeight, int mouseX, int mouseY, PlayerEntity player);
+	void render(PoseStack stack, T puzzle, List<AspectSlot> puzzleSlots, List<Slot> puzzleItemSlots, int screenWidth, int screenHeight, int mouseX, int mouseY, Player player);
 	
 	default Minecraft mc(){
 		return Minecraft.getInstance();
 	}
 	
-	default FontRenderer fr(){
-		return mc().fontRenderer;
+	default Font fr(){
+		return mc().font;
 	}
 	
-	default void drawPaper(MatrixStack stack, int screenWidth, int screenHeight){
-		mc().getTextureManager().bindTexture(PAPER);
+	default void drawPaper(PoseStack stack, int screenWidth, int screenHeight){
+		mc().getTextureManager().bindForSetup(PAPER);
 		blit(stack, guiLeft(screenWidth) + 141, guiTop(screenHeight) + 35, 0, 0, 214, 134, 214, 134);
 	}
 	
-	default void renderAfter(MatrixStack stack, T puzzle, List<AspectSlot> puzzleSlots, List<Slot> puzzleItemSlots, int screenWidth, int screenHeight, int mouseX, int mouseY, PlayerEntity player) {}
+	default void renderAfter(PoseStack stack, T puzzle, List<AspectSlot> puzzleSlots, List<Slot> puzzleItemSlots, int screenWidth, int screenHeight, int mouseX, int mouseY, Player player) {}
 	
 	default int guiLeft(int screenWidth){
 		return (screenWidth - ResearchTableScreen.WIDTH) / 2;

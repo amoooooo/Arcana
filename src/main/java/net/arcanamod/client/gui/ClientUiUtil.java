@@ -1,8 +1,8 @@
 package net.arcanamod.client.gui;
 
-import com.mojang.blaze3d.matrix.PoseStack;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.Tesselator;
 import net.arcanamod.Arcana;
 import net.arcanamod.aspects.Aspect;
 import net.arcanamod.aspects.AspectStack;
@@ -16,20 +16,22 @@ import net.arcanamod.systems.research.Icon;
 import net.arcanamod.systems.research.ResearchBooks;
 import net.arcanamod.systems.research.ResearchEntry;
 import net.arcanamod.util.Pair;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.AbstractGui;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.renderer.IRenderTypeBuffer;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.resources.I18n;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiComponent;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.resources.language.I18n;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextComponent;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.*;
-import net.minecraftforge.fml.client.gui.GuiUtils;
+import net.minecraftforge.client.gui.GuiUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class ClientUiUtil{
 	
@@ -56,20 +58,20 @@ public class ClientUiUtil{
 		// if there is a fractional part, round it
 		String s = (amount % 1 > 0.1) ? String.format("%.1f", amount) : String.format("%.0f", amount);
 		PoseStack.translate(0, 0, mc.getItemRenderer().blitOffset + 200.0F);
-		IRenderTypeBuffer.Impl impl = IRenderTypeBuffer.getImpl(Tessellator.getInstance().getBuffer());
-		mc.fontRenderer.renderString(s, x + 19 - mc.fontRenderer.getStringWidth(s), y + 10, colour, true, PoseStack.getLast().getMatrix(), impl, false, 0, 0xf000f0);
-		impl.finish();
+		MultiBufferSource bufferSource = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
+		mc.font.drawInBatch(s, x + 19 - mc.font.width(s), y + 10, colour, true, PoseStack.last().pose(), bufferSource, false, 0, 0xf000f0);
+		Tesselator.getInstance().end();
 	}
 	
 	public static void renderAspect(PoseStack stack, Aspect aspect, int x, int y){
 		Minecraft mc = Minecraft.getInstance();
-		mc.getTextureManager().bindTexture(AspectUtils.getAspectTextureLocation(aspect));
+		mc.getTextureManager().bindForSetup(AspectUtils.getAspectTextureLocation(aspect));
 		drawModalRectWithCustomSizedTexture(stack, x, y, 0, 0, 16, 16, 16, 16);
 	}
 	
 	public static void drawModalRectWithCustomSizedTexture(PoseStack stack, int x, int y, float texX, float texY, int width, int height, int textureWidth, int textureHeight){
-		int z = Minecraft.getInstance().currentScreen != null ? Minecraft.getInstance().currentScreen.getBlitOffset() : 1;
-		AbstractGui.blit(stack, x, y, z, texX, texY, width, height, textureWidth, textureHeight);
+		int z = Minecraft.getInstance().screen != null ? Minecraft.getInstance().screen.getBlitOffset() : 1;
+		GuiComponent.blit(stack, x, y, z, texX, texY, width, height, textureWidth, textureHeight);
 	}
 	
 	public static void drawTexturedModalRect(PoseStack stack, int x, int y, float texX, float texY, int width, int height){
@@ -87,24 +89,23 @@ public class ClientUiUtil{
 	public static void drawAspectTooltip(PoseStack stack, Aspect aspect, String descriptions, int mouseX, int mouseY, int screenWidth, int screenHeight){
 		String name = AspectUtils.getLocalizedAspectDisplayName(aspect);
 		
-		List<ITextComponent> text = new ArrayList<>();
-		text.add(new StringTextComponent(name));
+		List<Component> text = new ArrayList<>();
+		text.add(new TextComponent(name));
 		if(!descriptions.equals(""))
 			for(String description : descriptions.split("\n"))
-				text.add(new StringTextComponent(description).setStyle(Style.EMPTY.setColor(Color.fromTextFormatting(TextFormatting.GRAY))));
+				text.add(new TextComponent(description).setStyle(Style.EMPTY.withColor(ChatFormatting.GRAY)));
 		
 		drawAspectStyleTooltip(stack, text, mouseX, mouseY, screenWidth, screenHeight);
 		
 		if(shouldShowAspectIngredients() && Screen.hasShiftDown()){
-			RenderSystem.pushMatrix();
-			RenderSystem.translatef(0, 0, 500);
-			RenderSystem.color3f(1, 1, 1);
+			stack.popPose();
+			stack.translate(0, 0, 500);
 			Minecraft mc = Minecraft.getInstance();
-			RenderSystem.translatef(0, 0, mc.getItemRenderer().zLevel);
+			stack.translate(0, 0, mc.getItemRenderer().blitOffset);
 			
 			// copied from GuiUtils#drawHoveringText but without text wrapping
-			FontRenderer fontRenderer = Minecraft.getInstance().fontRenderer;
-			int tooltipTextWidth = fontRenderer.getStringWidth(name);
+			Font fontRenderer = Minecraft.getInstance().font;
+			int tooltipTextWidth = fontRenderer.width(name);
 			int tooltipX = mouseX + 12;
 			if(tooltipX + tooltipTextWidth + 4 > screenWidth)
 				tooltipX = mouseX - 16 - tooltipTextWidth;
@@ -120,18 +121,18 @@ public class ClientUiUtil{
 			if(combinationPairs != null){
 				int color = 0xa0222222;
 				// 2px padding horizontally, 2px padding vertically
-				GuiUtils.drawGradientRect(stack.getLast().getMatrix(), 0, x, y - 2, x + 40, y + 18, color, color);
+				GuiUtils.drawGradientRect(stack.last().pose(), 0, x, y - 2, x + 40, y + 18, color, color);
 				x += 2;
 				renderAspect(stack, combinationPairs.getFirst(), x, y);
 				x += 20;
 				renderAspect(stack, combinationPairs.getSecond(), x, y);
 			}
-			RenderSystem.popMatrix();
+			stack.pushPose();
 		}
 	}
 	
-	public static void drawAspectStyleTooltip(PoseStack stack, List<ITextComponent> text, int mouseX, int mouseY, int screenWidth, int screenHeight){
-		GuiUtils.drawHoveringText(stack, text, mouseX, mouseY, screenWidth, screenHeight, -1, GuiUtils.DEFAULT_BACKGROUND_COLOR, 0xFF00505F, 0xFF00282F, Minecraft.getInstance().fontRenderer);
+	public static void drawAspectStyleTooltip(PoseStack stack, List<Component> text, int mouseX, int mouseY, int screenWidth, int screenHeight){
+		Minecraft.getInstance().screen.renderTooltip(stack, text, Optional.empty(), mouseX, mouseY, Minecraft.getInstance().font);
 	}
 	
 	public static void renderIcon(PoseStack stack, Icon icon, int x, int y, int itemZLevel){
@@ -139,18 +140,18 @@ public class ClientUiUtil{
 		if(icon.getStack() != null && !icon.getStack().isEmpty()){
 			// this, uhh, doesn't work
 			// ItemRenderer adds 50 automatically, so we adjust for it
-			Minecraft.getInstance().getItemRenderer().zLevel = itemZLevel - 50;
-			Minecraft.getInstance().getItemRenderer().renderItemAndEffectIntoGUI(icon.getStack(), x, y);
+			Minecraft.getInstance().getItemRenderer().blitOffset = itemZLevel - 50;
+			Minecraft.getInstance().getItemRenderer().renderAndDecorateItem(icon.getStack(), x, y);
 		}else{
 			// otherwise, check for a texture
-			Minecraft.getInstance().getTextureManager().bindTexture(icon.getResourceLocation());
+			Minecraft.getInstance().getTextureManager().bindForSetup(icon.getResourceLocation());
 			RenderSystem.enableDepthTest();
 			drawModalRectWithCustomSizedTexture(stack, x, y, 0, 0, 16, 16, 16, 16);
 		}
 	}
 	
 	public static void renderVisCore(PoseStack stack, Core core, int x, int y){
-		Minecraft.getInstance().getTextureManager().bindTexture(core.getGuiTexture());
+		Minecraft.getInstance().getTextureManager().bindForSetup(core.getGuiTexture());
 		drawModalRectWithCustomSizedTexture(stack, x, y, 0, 0, 49, 49, 49, 49);
 	}
 	
@@ -182,7 +183,7 @@ public class ClientUiUtil{
 		int meterLen = 16;
 		int renderLen = (int)((aspStack.getAmount() * meterLen) / visMax);
 		if(renderLen > 0){
-			Minecraft.getInstance().getTextureManager().bindTexture(aspStack.getAspect().getVisMeterTexture());
+			Minecraft.getInstance().getTextureManager().bindForSetup(aspStack.getAspect().getVisMeterTexture());
 			if(vertical)
 				drawModalRectWithCustomSizedTexture(stack, x, y, 0, 0, meterShort, renderLen, meterLen, meterLen);
 			else
@@ -193,8 +194,8 @@ public class ClientUiUtil{
 	public static void renderVisDetailInfo(PoseStack matrices, AspectHandler aspects){
 		int topMargin = 0;
 		for(AspectHolder holder : aspects.getHolders()){
-			Minecraft.getInstance().fontRenderer.drawString(matrices,
-					I18n.format("aspect." + holder.getStack().getAspect().name().toLowerCase()) + ": " + holder.getStack().getAmount(),
+			Minecraft.getInstance().font.draw(matrices,
+					I18n.get("aspect." + holder.getStack().getAspect().name().toLowerCase()) + ": " + holder.getStack().getAmount(),
 					60, topMargin, java.awt.Color.WHITE.getRGB());
 			topMargin += 10;
 		}

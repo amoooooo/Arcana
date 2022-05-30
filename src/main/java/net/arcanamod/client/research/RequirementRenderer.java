@@ -4,7 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import net.arcanamod.client.research.impls.*;
 import net.arcanamod.systems.research.Requirement;
 import net.arcanamod.systems.research.impls.*;
-import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 
@@ -35,7 +35,7 @@ public interface RequirementRenderer<T extends Requirement>{
 	
 	void render(PoseStack matrices, int x, int y, T requirement, int ticks, float partialTicks, Player player);
 	
-	List<MutableComponent> tooltip(T requirement, Player player);
+	List<Component> tooltip(T requirement, Player player);
 	
 	default boolean shouldDrawTickOrCross(T requirement, int amount){
 		return amount == 1;

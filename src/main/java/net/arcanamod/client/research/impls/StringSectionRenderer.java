@@ -1,13 +1,13 @@
 package net.arcanamod.client.research.impls;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.arcanamod.client.gui.ResearchEntryScreen;
 import net.arcanamod.client.research.EntrySectionRenderer;
 import net.arcanamod.client.research.TextFormatter;
 import net.arcanamod.systems.research.impls.StringSection;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.I18n;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.client.resources.language.I18n;
+import net.minecraft.world.entity.player.Player;
 
 import java.util.HashMap;
 import java.util.List;
@@ -25,10 +25,10 @@ public class StringSectionRenderer implements EntrySectionRenderer<StringSection
 	
 	public String getTranslatedText(StringSection section){
 		// TODO: make this only run when needed
-		return TextFormatter.process(I18n.format(section.getText()), section).replace("{~sep}", "\n{~sep}\n");
+		return TextFormatter.process(I18n.get(section.getText()), section).replace("{~sep}", "\n{~sep}\n");
 	}
 	
-	public int span(StringSection section, PlayerEntity player){
+	public int span(StringSection section, Player player){
 		List<TextFormatter.Paragraph> paragraphs = textCache.computeIfAbsent(section, s -> TextFormatter.compile(getTranslatedText(s), s));
 		int curPage = 1;
 		float curPageHeight = 0;
@@ -47,9 +47,9 @@ public class StringSectionRenderer implements EntrySectionRenderer<StringSection
 		return curPage;
 	}
 	
-	public void render(MatrixStack stack, StringSection section, int pageIndex, int screenWidth, int screenHeight, int mouseX, int mouseY, boolean right, PlayerEntity player){
+	public void render(PoseStack stack, StringSection section, int pageIndex, int screenWidth, int screenHeight, int mouseX, int mouseY, boolean right, Player player){
 		List<TextFormatter.Paragraph> paragraphs = textCache.computeIfAbsent(section, s -> TextFormatter.compile(getTranslatedText(s), s));
-		stack.push();
+		stack.pushPose();
 		float textScaling = textScaling();
 		stack.scale(textScaling, textScaling, 1);
 		int x = right ? ResearchEntryScreen.PAGE_X + ResearchEntryScreen.RIGHT_X_OFFSET : ResearchEntryScreen.PAGE_X;
@@ -79,17 +79,17 @@ public class StringSectionRenderer implements EntrySectionRenderer<StringSection
 			}
 			
 		}
-		stack.pop();
+		stack.popPose();
 	}
 	
-	public void renderAfter(MatrixStack stack, StringSection section, int pageIndex, int screenWidth, int screenHeight, int mouseX, int mouseY, boolean right, PlayerEntity player){}
+	public void renderAfter(PoseStack stack, StringSection section, int pageIndex, int screenWidth, int screenHeight, int mouseX, int mouseY, boolean right, Player player){}
 	
 	public static void clearCache(){
 		textCache = new HashMap<>();
 	}
 	
 	public static float textScaling(){
-		int scale = (int)Minecraft.getInstance().getMainWindow().getGuiScaleFactor();
+		int scale = (int)Minecraft.getInstance().getWindow().getGuiScale();
 		float textScaling = TEXT_SCALING;
 		if(scale * textScaling < 1)
 			textScaling = 1;

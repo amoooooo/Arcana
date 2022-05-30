@@ -6,8 +6,6 @@ import net.arcanamod.world.ClientAuraView;
 import net.arcanamod.world.AuraView;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;

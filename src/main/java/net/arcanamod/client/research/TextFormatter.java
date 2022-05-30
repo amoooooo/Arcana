@@ -2,6 +2,7 @@ package net.arcanamod.client.research;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.vertex.IVertexBuilder;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.arcanamod.ArcanaConfig;
 import net.arcanamod.aspects.Aspect;
 import net.arcanamod.aspects.Aspects;
@@ -14,6 +15,7 @@ import net.arcanamod.systems.research.ResearchBooks;
 import net.arcanamod.systems.research.ResearchEntry;
 import net.arcanamod.systems.research.impls.StringSection;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.fonts.EmptyGlyph;
 import net.minecraft.client.gui.fonts.Font;
@@ -22,6 +24,7 @@ import net.minecraft.client.gui.fonts.TexturedGlyph;
 import net.minecraft.client.renderer.IRenderTypeBuffer;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.resources.I18n;
+import net.minecraft.network.chat.Style;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.Style;
@@ -47,7 +50,7 @@ public final class TextFormatter{
 	
 	public interface Span{
 		
-		void render(MatrixStack stack, int x, int y);
+		void render(PoseStack stack, int x, int y);
 		
 		float getWidth();
 		
@@ -65,7 +68,7 @@ public final class TextFormatter{
 			this.renderStyle = style;
 		}
 		
-		public void render(MatrixStack stack, int x, int y){
+		public void render(PoseStack stack, int x, int y){
 			if(renderStyle.getSize() != 1){
 				stack.push();
 				stack.scale(renderStyle.getSize(), renderStyle.getSize(), 1);
@@ -92,7 +95,7 @@ public final class TextFormatter{
 			this.aspect = aspect;
 		}
 		
-		public void render(MatrixStack stack, int x, int y){
+		public void render(PoseStack stack, int x, int y){
 			ClientUiUtil.renderAspect(stack, aspect, x, y);
 		}
 		
@@ -113,7 +116,7 @@ public final class TextFormatter{
 			this.spans = spans;
 		}
 		
-		public void render(MatrixStack stack, int x, int y){
+		public void render(PoseStack stack, int x, int y){
 			for(Span span : spans){
 				span.render(stack, x, y);
 				x += span.getWidth();
@@ -137,7 +140,7 @@ public final class TextFormatter{
 	
 	public interface Paragraph{
 		
-		void render(MatrixStack stack, int x, int y, float scale);
+		void render(PoseStack stack, int x, int y, float scale);
 		
 		float getHeight();
 	}
@@ -185,7 +188,7 @@ public final class TextFormatter{
 			this(spans, false);
 		}
 		
-		public void render(MatrixStack stack, int x, int y, float scale){
+		public void render(PoseStack stack, int x, int y, float scale){
 			float curY = 0;
 			for(List<Span> line : lines){
 				float curX = 0;
@@ -210,8 +213,8 @@ public final class TextFormatter{
 	
 	public static class SeparatorParagraph implements Paragraph{
 		
-		public void render(MatrixStack stack, int x, int y, float scale){
-			Minecraft.getInstance().getTextureManager().bindTexture(((ResearchEntryScreen)(Minecraft.getInstance().currentScreen)).bg);
+		public void render(PoseStack stack, int x, int y, float scale){
+			Minecraft.getInstance().getTextureManager().bindForSetup(((ResearchEntryScreen)(Minecraft.getInstance().screen)).bg);
 			drawTexturedModalRect(stack, (int)(x + (getTextWidth() - 86) / 2), y + 3, 29, 184, 86, 3);
 		}
 		
@@ -221,18 +224,18 @@ public final class TextFormatter{
 	}
 	
 	public static float width(String str, Style style){
-		return width(str, style, Minecraft.getInstance().fontRenderer);
+		return width(str, style, Minecraft.getInstance().font);
 	}
 	
-	public static float width(String str, Style style, FontRenderer fr){
+	public static float width(String str, Style style, Font fr){
 		float ret = 0;
-		Font font = ((FontRendererAccessor)fr).callGetFont(style.getFontId());
+		Font font = ((FontRendererAccessor)fr).callGetFont(style.getFont());
 		boolean formatting = false;
 		for(char c : str.toCharArray())
 			if(c == '\u00a7')
 				formatting = true;
 			else if(!formatting)
-				ret += font.func_238557_a_(c).getAdvance(style.getBold());
+				ret += font.func_238557_a_(c).getAdvance(style.isBold());
 			else
 				formatting = false;
 		return ret;

@@ -1,6 +1,6 @@
 package net.arcanamod.client.research.impls;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.arcanamod.aspects.Aspect;
 import net.arcanamod.aspects.Aspects;
 import net.arcanamod.client.gui.ClientUiUtil;
@@ -10,8 +10,8 @@ import net.arcanamod.systems.research.ResearchBook;
 import net.arcanamod.systems.research.ResearchBooks;
 import net.arcanamod.systems.research.impls.AspectCombosSection;
 import net.arcanamod.util.Pair;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 
 import java.util.List;
 
@@ -21,7 +21,7 @@ public class AspectCombosSectionRenderer implements EntrySectionRenderer<AspectC
 	
 	protected ResourceLocation textures = null;
 	
-	public void render(MatrixStack stack, AspectCombosSection section, int pageIndex, int screenWidth, int screenHeight, int mouseX, int mouseY, boolean right, PlayerEntity player){
+	public void render(PoseStack stack, AspectCombosSection section, int pageIndex, int screenWidth, int screenHeight, int mouseX, int mouseY, boolean right, Player player){
 		ResearchBook book = ResearchBooks.getEntry(section.getEntry()).category().book();
 		// don't make a new rloc every frame
 		if(textures == null || !textures.getNamespace().equals(book.getKey().getNamespace()))
@@ -37,13 +37,13 @@ public class AspectCombosSectionRenderer implements EntrySectionRenderer<AspectC
 			ClientUiUtil.renderAspect(stack, pair.getFirst(), x, y + 30 * dispIndex);
 			ClientUiUtil.renderAspect(stack, pair.getSecond(), x + 40, y + 30 * dispIndex);
 			ClientUiUtil.renderAspect(stack, Aspects.COMBINATIONS.get(pair), x + 80, y + 30 * dispIndex);
-			mc().getTextureManager().bindTexture(textures);
+			mc().getTextureManager().bindForSetup(textures);
 			ClientUiUtil.drawTexturedModalRect(stack, x + 20, y + 30 * dispIndex, 105, 161, 12, 13);
 			ClientUiUtil.drawTexturedModalRect(stack, x + 60, y + 30 * dispIndex, 118, 161, 12, 13);
 		}
 	}
 	
-	public void renderAfter(MatrixStack stack, AspectCombosSection section, int pageIndex, int screenWidth, int screenHeight, int mouseX, int mouseY, boolean right, PlayerEntity player){
+	public void renderAfter(PoseStack stack, AspectCombosSection section, int pageIndex, int screenWidth, int screenHeight, int mouseX, int mouseY, boolean right, Player player){
 		int x = (right ? PAGE_X + RIGHT_X_OFFSET : PAGE_X) + (screenWidth - 256) / 2 + 4;
 		int y = PAGE_Y + (screenHeight - 181) / 2 + HEIGHT_OFFSET + 10;
 		
@@ -66,7 +66,7 @@ public class AspectCombosSectionRenderer implements EntrySectionRenderer<AspectC
 		}
 	}
 	
-	public int span(AspectCombosSection section, PlayerEntity player){
+	public int span(AspectCombosSection section, Player player){
 		// how many aspects fit on a page? lets say 3 for now
 		return (int)Math.ceil(Aspects.COMBINATIONS.size() / 5f);
 	}

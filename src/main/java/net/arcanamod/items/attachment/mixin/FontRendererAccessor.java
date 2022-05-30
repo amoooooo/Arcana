@@ -1,14 +1,12 @@
 package net.arcanamod.items.attachment.mixin;
 
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.client.gui.fonts.Font;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.gui.Font;
+import net.minecraft.resources.ResourceLocation;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
-@Mixin(FontRenderer.class)
+@Mixin(FontRendererAccessor.class)
 public interface FontRendererAccessor{
-	
 	@Invoker
 	Font callGetFont(ResourceLocation fontLocation);
 }

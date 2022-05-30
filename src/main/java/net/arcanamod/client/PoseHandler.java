@@ -1,25 +1,24 @@
 package net.arcanamod.client;
 
 import net.arcanamod.items.WandItem;
-import net.minecraft.client.renderer.entity.model.PlayerModel;
-import net.minecraft.client.renderer.model.ModelRenderer;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.client.model.PlayerModel;
+import net.minecraft.client.model.geom.ModelPart;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
 
 public final class PoseHandler{
 	
 	public static void applyPose(PlayerModel<?> model, Entity entity){
-		if(entity instanceof PlayerEntity){
-			PlayerEntity player = (PlayerEntity)entity;
+		if(entity instanceof Player player){
 			// If we're using a wand,
-			if(player.getActiveItemStack().getItem() instanceof WandItem){
+			if(player.getItemInHand(player.getUsedItemHand()).getItem() instanceof WandItem){
 				// point where we're facing.
 				// TODO: better draining pose
-				ModelRenderer arm = player.getActiveHand() == Hand.MAIN_HAND ? model.bipedRightArm : model.bipedLeftArm;
-				Vector3d facing = player.getLookVec();
-				arm.rotateAngleX = -((float)facing.y) - 1.5f;
+				ModelPart arm = player.getMainArm() == HumanoidArm.RIGHT ? model.rightArm : model.leftArm;
+				Vec3 facing = player.getLookAngle();
+				arm.xRot = -((float)facing.y) - 1.5f;
 			}
 		}
 	}

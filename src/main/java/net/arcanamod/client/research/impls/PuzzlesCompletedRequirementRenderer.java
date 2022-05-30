@@ -1,16 +1,15 @@
 package net.arcanamod.client.research.impls;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
-import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.arcanamod.Arcana;
 import net.arcanamod.capabilities.Researcher;
 import net.arcanamod.client.research.RequirementRenderer;
 import net.arcanamod.systems.research.impls.PuzzlesCompletedRequirement;
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 
 import java.util.Arrays;
 import java.util.List;
@@ -21,13 +20,12 @@ public class PuzzlesCompletedRequirementRenderer implements RequirementRenderer<
 	
 	private static final ResourceLocation ICON = Arcana.arcLoc("textures/item/research_note_complete.png");
 	
-	public void render(MatrixStack matrices, int x, int y, PuzzlesCompletedRequirement requirement, int ticks, float partialTicks, PlayerEntity player){
-		Minecraft.getInstance().getTextureManager().bindTexture(ICON);
-		RenderSystem.color4f(1f, 1f, 1f, 1f);
+	public void render(PoseStack matrices, int x, int y, PuzzlesCompletedRequirement requirement, int ticks, float partialTicks, Player player){
+		Minecraft.getInstance().getTextureManager().bindForSetup(ICON);
 		drawModalRectWithCustomSizedTexture(matrices, x, y, 0, 0, 16, 16, 16, 16);
 	}
 	
-	public List<ITextComponent> tooltip(PuzzlesCompletedRequirement requirement, PlayerEntity player){
-		return Arrays.asList(new TranslationTextComponent("requirement.puzzles_completed", requirement.getAmount()), new TranslationTextComponent("requirement.puzzles_completed.progress", Researcher.getFrom(player).getPuzzlesCompleted(), requirement.getAmount()));
+	public List<Component> tooltip(PuzzlesCompletedRequirement requirement, Player player){
+		return Arrays.asList(new TranslatableComponent("requirement.puzzles_completed", requirement.getAmount()), new TranslatableComponent("requirement.puzzles_completed.progress", Researcher.getFrom(player).getPuzzlesCompleted(), requirement.getAmount()));
 	}
 }
