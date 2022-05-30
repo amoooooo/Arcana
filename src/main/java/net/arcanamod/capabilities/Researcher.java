@@ -5,10 +5,9 @@ import net.arcanamod.systems.research.Parent;
 import net.arcanamod.systems.research.Puzzle;
 import net.arcanamod.systems.research.ResearchBooks;
 import net.arcanamod.systems.research.ResearchEntry;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.*;
-import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.common.util.Constants;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -72,9 +71,9 @@ public interface Researcher{
 	 */
 	void resetEntry(ResearchEntry entry);
 	
-	void setPlayer(PlayerEntity player);
+	void setPlayer(Player player);
 	
-	PlayerEntity getPlayer();
+	Player getPlayer();
 	
 	/**
 	 * Returns a map containing this researcher's data, where the keys are the keys of all sections
@@ -104,44 +103,44 @@ public interface Researcher{
 	
 	// let's pretend to be an abstract interface but actually not be, that's a great idea because nobody needs
 	// to extend this ever or modify its behavior haha
-	default CompoundNBT serializeNBT(){
-		CompoundNBT compound = new CompoundNBT();
+	default CompoundTag serializeNBT(){
+		CompoundTag compound = new CompoundTag();
 		
-		CompoundNBT entries = new CompoundNBT();
+		CompoundTag entries = new CompoundTag();
 		getEntryData().forEach((key, value) -> entries.putInt(key.toString(), value));
 		compound.put("entries", entries);
 		
-		ListNBT puzzles = new ListNBT();
-		getPuzzleData().forEach(puzzle -> puzzles.add(StringNBT.valueOf(puzzle.toString())));
+		ListTag puzzles = new ListTag();
+		getPuzzleData().forEach(puzzle -> puzzles.add(StringTag.valueOf(puzzle.toString())));
 		compound.put("puzzles", puzzles);
 		
-		CompoundNBT pins = new CompoundNBT();
+		CompoundTag pins = new CompoundTag();
 		getPinned().forEach((pin, stage) -> {
-			ListNBT stages = new ListNBT();
-			stage.forEach(integer -> stages.add(IntNBT.valueOf(integer)));
+			ListTag stages = new ListTag();
+			stage.forEach(integer -> stages.add(IntTag.valueOf(integer)));
 			pins.put(pin.toString(), stages);
 		});
 		compound.put("pins", pins);
 		return compound;
 	}
 	
-	default void deserializeNBT(@Nonnull CompoundNBT data){
+	default void deserializeNBT(@Nonnull CompoundTag data){
 		Map<ResourceLocation, Integer> entryDat = new HashMap<>();
-		CompoundNBT entries = data.getCompound("entries");
-		for(String s : entries.keySet())
+		CompoundTag entries = data.getCompound("entries");
+		for(String s : entries.getAllKeys())
 			entryDat.put(new ResourceLocation(s), entries.getInt(s));
 		setEntryData(entryDat);
 		
 		Set<ResourceLocation> puzzleDat = new HashSet<>();
-		ListNBT puzzles = data.getList("puzzles", Constants.NBT.TAG_STRING);
-		for(INBT key : puzzles)
-			puzzleDat.add(new ResourceLocation(key.getString()));
+		ListTag puzzles = data.getList("puzzles", Tag.TAG_STRING);
+		for(Tag key : puzzles)
+			puzzleDat.add(new ResourceLocation(key.getAsString()));
 		setPuzzleData(puzzleDat);
 		
 		Map<ResourceLocation, List<Integer>> pinData = new HashMap<>();
-		CompoundNBT pins = data.getCompound("pins");
-		for(String s : pins.keySet())
-			pinData.put(new ResourceLocation(s), pins.getList(s, Constants.NBT.TAG_INT).stream().map(nbt -> ((IntNBT)nbt).getInt()).collect(Collectors.toList()));
+		CompoundTag pins = data.getCompound("pins");
+		for(String s : pins.getAllKeys())
+			pinData.put(new ResourceLocation(s), pins.getList(s, Tag.TAG_INT).stream().map(Tag -> ((IntTag)Tag).getAsInt()).collect(Collectors.toList()));
 		setPinned(pinData);
 	}
 	
@@ -169,7 +168,7 @@ public interface Researcher{
 	 */
 	@SuppressWarnings("ConstantConditions")
 	@Nullable
-	static Researcher getFrom(@Nullable PlayerEntity p){
+	static Researcher getFrom(@Nullable Player p){
 		return p == null ? null : p.getCapability(ResearcherCapability.RESEARCHER_CAPABILITY, null).orElse(null);
 	}
 	

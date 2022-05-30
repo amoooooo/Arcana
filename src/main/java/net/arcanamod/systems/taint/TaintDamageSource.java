@@ -1,6 +1,6 @@
 package net.arcanamod.systems.taint;
 
-import net.minecraft.util.DamageSource;
+import net.minecraft.world.damagesource.DamageSource;
 
 public class TaintDamageSource extends DamageSource {
 	public static TaintDamageSource TAINT = new TaintDamageSource();
@@ -10,7 +10,7 @@ public class TaintDamageSource extends DamageSource {
 	}
 
 	@Override
-	public boolean isUnblockable() {
+	public boolean isBypassArmor() {
 		return true;
 	}
 }

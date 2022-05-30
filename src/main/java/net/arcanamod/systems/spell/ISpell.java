@@ -1,7 +1,7 @@
 package net.arcanamod.systems.spell;
 
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.text.ITextComponent;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.TextComponent;
 
 import java.util.Optional;
 
@@ -12,7 +12,7 @@ public interface ISpell{
 	 */
 	SpellCosts getSpellCosts();
 
-	default Optional<ITextComponent> getName(CompoundNBT nbt){
+	default Optional<TextComponent> getName(CompoundTag nbt){
 		return Optional.empty();
 	}
 }

@@ -1,10 +1,10 @@
 package net.arcanamod.systems.research;
 
 import net.arcanamod.systems.research.impls.*;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.ListNBT;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.world.World;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.Level;
 
 import java.util.*;
 import java.util.function.Function;
@@ -21,7 +21,7 @@ public abstract class EntrySection{
 	// static stuff
 	// when addon support is to be added: change this from strings to ResourceLocations so mods can register more
 	private static Map<String, Function<String, EntrySection>> factories = new LinkedHashMap<>();
-	private static Map<String, Function<CompoundNBT, EntrySection>> deserializers = new LinkedHashMap<>();
+	private static Map<String, Function<CompoundTag, EntrySection>> deserializers = new LinkedHashMap<>();
 	
 	public static Function<String, EntrySection> getFactory(String type){
 		return factories.get(type);
@@ -34,10 +34,10 @@ public abstract class EntrySection{
 			return null;
 	}
 	
-	public static EntrySection deserialze(CompoundNBT passData){
+	public static EntrySection deserialze(CompoundTag passData){
 		String type = passData.getString("type");
-		CompoundNBT data = passData.getCompound("data");
-		List<Requirement> requirements = streamAndApply(passData.getList("requirements", 10), CompoundNBT.class, Requirement::deserialize).collect(Collectors.toList());
+		CompoundTag data = passData.getCompound("data");
+		List<Requirement> requirements = streamAndApply(passData.getList("requirements", 10), CompoundTag.class, Requirement::deserialize).collect(Collectors.toList());
 		if(deserializers.get(type) != null){
 			EntrySection section = deserializers.get(type).apply(data);
 			requirements.forEach(section::addRequirement);
@@ -50,17 +50,17 @@ public abstract class EntrySection{
 	
 	public static void init(){
 		factories.put(StringSection.TYPE, StringSection::new);
-		deserializers.put(StringSection.TYPE, nbt -> new StringSection(nbt.getString("text")));
+		deserializers.put(StringSection.TYPE, Tag -> new StringSection(Tag.getString("text")));
 		factories.put(CraftingSection.TYPE, CraftingSection::new);
-		deserializers.put(CraftingSection.TYPE, nbt -> new CraftingSection(nbt.getString("recipe")));
+		deserializers.put(CraftingSection.TYPE, Tag -> new CraftingSection(Tag.getString("recipe")));
 		factories.put(SmeltingSection.TYPE, SmeltingSection::new);
-		deserializers.put(SmeltingSection.TYPE, nbt -> new SmeltingSection(nbt.getString("recipe")));
+		deserializers.put(SmeltingSection.TYPE, Tag -> new SmeltingSection(Tag.getString("recipe")));
 		factories.put(AlchemySection.TYPE, AlchemySection::new);
-		deserializers.put(AlchemySection.TYPE, nbt -> new AlchemySection(nbt.getString("recipe")));
+		deserializers.put(AlchemySection.TYPE, Tag -> new AlchemySection(Tag.getString("recipe")));
 		factories.put(ArcaneCraftingSection.TYPE, ArcaneCraftingSection::new);
-		deserializers.put(ArcaneCraftingSection.TYPE, nbt -> new ArcaneCraftingSection(nbt.getString("recipe")));
+		deserializers.put(ArcaneCraftingSection.TYPE, Tag -> new ArcaneCraftingSection(Tag.getString("recipe")));
 		factories.put(ImageSection.TYPE, ImageSection::new);
-		deserializers.put(ImageSection.TYPE, nbt -> new ImageSection(nbt.getString("image")));
+		deserializers.put(ImageSection.TYPE, Tag -> new ImageSection(Tag.getString("image")));
 		factories.put(AspectCombosSection.TYPE, __ -> new AspectCombosSection());
 		deserializers.put(AspectCombosSection.TYPE, __ -> new AspectCombosSection());
 	}
@@ -78,17 +78,17 @@ public abstract class EntrySection{
 		return Collections.unmodifiableList(requirements);
 	}
 	
-	public CompoundNBT getPassData(){
-		CompoundNBT nbt = new CompoundNBT();
-		nbt.putString("type", getType());
-		nbt.put("data", getData());
-		nbt.putString("entry", getEntry().toString());
+	public CompoundTag getPassData(){
+		CompoundTag Tag = new CompoundTag();
+		Tag.putString("type", getType());
+		Tag.put("data", getData());
+		Tag.putString("entry", getEntry().toString());
 		
-		ListNBT list = new ListNBT();
+		ListTag list = new ListTag();
 		getRequirements().forEach((requirement) -> list.add(requirement.getPassData()));
-		nbt.put("requirements", list);
+		Tag.put("requirements", list);
 		
-		return nbt;
+		return Tag;
 	}
 	
 	public ResourceLocation getEntry(){
@@ -97,7 +97,7 @@ public abstract class EntrySection{
 	
 	public abstract String getType();
 	
-	public abstract CompoundNBT getData();
+	public abstract CompoundTag getData();
 	
 	public void addOwnRequirements(){
 	}
@@ -113,7 +113,7 @@ public abstract class EntrySection{
 	 * 		The entry this is in.
 	 * @return This entry's pins.
 	 */
-	public Stream<Pin> getPins(int index, World world, ResearchEntry entry){
+	public Stream<Pin> getPins(int index, Level world, ResearchEntry entry){
 		return Stream.empty();
 	}
 }

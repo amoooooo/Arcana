@@ -1,19 +1,19 @@
 package net.arcanamod.items.tools;
 
-import mcp.MethodsReturnNonnullByDefault;
 import net.arcanamod.systems.taint.Taint;
-import net.minecraft.block.BlockState;
-import net.minecraft.item.HoeItem;
-import net.minecraft.item.IItemTier;
-import net.minecraft.item.ItemStack;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.world.item.HoeItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Tier;
+import net.minecraft.world.level.block.state.BlockState;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
 @ParametersAreNonnullByDefault
 @MethodsReturnNonnullByDefault
-public class SilverHoeItem extends HoeItem{
+public class SilverHoeItem extends HoeItem {
 	
-	public SilverHoeItem(IItemTier tier, float attackSpeed, Properties builder){
+	public SilverHoeItem(Tier tier, float attackSpeed, Properties builder){
 		super(tier, 1, attackSpeed, builder);
 	}
 	

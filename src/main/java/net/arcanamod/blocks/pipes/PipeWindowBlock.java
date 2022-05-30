@@ -1,11 +1,10 @@
 package net.arcanamod.blocks.pipes;
 
-import mcp.MethodsReturnNonnullByDefault;
-import net.minecraft.block.BlockState;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.IBlockReader;
-import net.minecraft.world.World;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -21,19 +20,21 @@ public class PipeWindowBlock extends TubeBlock{
 	
 	@Nullable
 	@Override
-	public TileEntity createTileEntity(BlockState state, IBlockReader world){
-		return new PipeWindowTileEntity();
+	public BlockEntity newBlockEntity(BlockPos pPos, BlockState pState){
+		return new PipeWindowBlockEntity(pPos, pState);
 	}
-	
-	public boolean hasComparatorInputOverride(BlockState state){
+
+	@Override
+	public boolean hasAnalogOutputSignal(BlockState state){
 		return true;
 	}
 	
-	public int getComparatorInputOverride(BlockState block, World world, BlockPos pos){
-		TileEntity te = world.getTileEntity(pos);
-		if(te instanceof PipeWindowTileEntity){
-			PipeWindowTileEntity window = (PipeWindowTileEntity)te;
-			int elapsed = (int)(te.getWorld().getGameTime() - window.getLastTransferTime());
+	@Override
+	public int getAnalogOutputSignal(BlockState block, Level world, BlockPos pos){
+		BlockEntity te = world.getBlockEntity(pos);
+		if(te instanceof PipeWindowBlockEntity){
+			PipeWindowBlockEntity window = (PipeWindowBlockEntity) te;
+			int elapsed = (int)(te.getLevel().getGameTime() - window.getLastTransferTime());
 			return elapsed > 12 ? 0 : 15;
 		}
 		return 0;

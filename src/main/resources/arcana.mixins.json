@@ -4,18 +4,18 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "arcana.refmap.json",
   "mixins": [
-    "LivingEntityMixin",
-    "ModContainerAccessor",
-    "TrunkPlacerTypeAccessor"
+    "net.arcanamod.items.attachment.mixin.LivingEntityMixin",
+    "net.arcanamod.items.attachment.mixin.ModContainerAccessor",
+    "net.arcanamod.items.attachment.mixin.TrunkPlacerTypeAccessor"
   ],
   "client": [
-    "AccessorFirstPersonRenderer",
-    "AccessorMinecraft",
-    "BiomeColorMixin",
-    "BipedModelMixin",
-    "BlockClientMixin",
-    "FontRendererAccessor",
-    "MinecraftClientMixin"
+    "net.arcanamod.items.attachment.mixin.AccessorFirstPersonRenderer",
+    "net.arcanamod.items.attachment.mixin.AccessorMinecraft",
+    "net.arcanamod.items.attachment.mixin.BiomeColorMixin",
+    "net.arcanamod.items.attachment.mixin.BipedModelMixin",
+    "net.arcanamod.items.attachment.mixin.BlockClientMixin",
+    "net.arcanamod.items.attachment.mixin.FontRendererAccessor",
+    "net.arcanamod.items.attachment.mixin.MinecraftClientMixin"
   ],
   "injectors": {
     "defaultRequire": 1

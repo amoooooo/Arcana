@@ -1,27 +1,27 @@
 package net.arcanamod.items.recipes;
 
-import mcp.MethodsReturnNonnullByDefault;
 import net.arcanamod.containers.slots.WandSlot;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.CraftingInventory;
-import net.minecraft.inventory.IInventory;
-import net.minecraft.inventory.container.Container;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.world.Container;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.CraftingContainer;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Set;
 
 @ParametersAreNonnullByDefault
 @MethodsReturnNonnullByDefault
-public class AspectCraftingInventory extends CraftingInventory{
+public class AspectCraftingInventory extends CraftingContainer{
 	
 	private final WandSlot wandSlot;
-	private final IInventory deferred;
-	private final Container eventHandler; // just store this twice
-	private final PlayerEntity crafter;
+	private final Container deferred;
+	private final AbstractContainerMenu eventHandler; // just store this twice
+	private final Player crafter;
 	
-	public AspectCraftingInventory(Container eventHandler, WandSlot wandSlot, int width, int height, IInventory deferred, PlayerEntity crafter){
+	public AspectCraftingInventory(AbstractContainerMenu eventHandler, WandSlot wandSlot, int width, int height, Container deferred, Player crafter){
 		super(eventHandler, width, height);
 		this.eventHandler = eventHandler;
 		this.wandSlot = wandSlot;
@@ -34,67 +34,67 @@ public class AspectCraftingInventory extends CraftingInventory{
 	}
 	
 	public int getSizeInventory(){
-		return deferred.getSizeInventory();
+		return deferred.getContainerSize();
 	}
 	
-	public ItemStack removeStackFromSlot(int index){
-		return deferred.removeStackFromSlot(index);
+	public ItemStack removeItemNoUpdate(int index){
+		return deferred.removeItemNoUpdate(index);
 	}
 	
-	public ItemStack decrStackSize(int index, int count) {
-		ItemStack itemstack = deferred.decrStackSize(index, count);
+	public ItemStack removeItem(int index, int count) {
+		ItemStack itemstack = deferred.removeItem(index, count);
 		if (!itemstack.isEmpty()) {
-			this.eventHandler.onCraftMatrixChanged(this);
+			this.eventHandler.slotsChanged(this);
 		}
 		return itemstack;
 	}
 	
 	public void setInventorySlotContents(int index, ItemStack stack){
-		deferred.setInventorySlotContents(index, stack);
-		this.eventHandler.onCraftMatrixChanged(this);
+		deferred.setItem(index, stack);
+		this.eventHandler.slotsChanged(this);
 	}
 	
 	public void markDirty(){
-		deferred.markDirty();
+		deferred.setChanged();
 	}
 	
-	public void clear(){
-		deferred.clear();
+	public void clearContent(){
+		deferred.clearContent();
 	}
 	
-	public int getInventoryStackLimit(){
-		return deferred.getInventoryStackLimit();
+	public int getMaxStackSize(){
+		return deferred.getMaxStackSize();
 	}
 	
-	public void openInventory(PlayerEntity player){}
+	public void openInventory(Player player){}
 	
-	public void closeInventory(PlayerEntity player){}
+	public void closeInventory(Player player){}
 	
-	public boolean isItemValidForSlot(int index, ItemStack stack){
-		return deferred.isItemValidForSlot(index, stack);
+	public boolean canPlaceItem(int index, ItemStack stack){
+		return deferred.canPlaceItem(index, stack);
 	}
 	
 	public int count(Item item){
-		return deferred.count(item);
+		return deferred.countItem(item);
 	}
 	
 	public boolean hasAny(Set<Item> set){
-		return deferred.hasAny(set);
+		return deferred.hasAnyOf(set);
 	}
 	
 	public boolean isEmpty(){
 		return deferred.isEmpty();
 	}
 	
-	public boolean isUsableByPlayer(PlayerEntity player){
-		return deferred.isUsableByPlayer(player);
+	public boolean stillValid(Player player){
+		return deferred.stillValid(player);
 	}
 	
-	public ItemStack getStackInSlot(int index){
-		return deferred.getStackInSlot(index);
+	public ItemStack getItem(int index){
+		return deferred.getItem(index);
 	}
 	
-	public PlayerEntity getCrafter() {
+	public Player getCrafter() {
 		return crafter;
 	}
 }

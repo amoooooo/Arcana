@@ -1,18 +1,19 @@
 package net.arcanamod.blocks.pipes;
 
-import mcp.MethodsReturnNonnullByDefault;
 import net.arcanamod.aspects.handlers.AspectHandlerCapability;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.SixWayBlock;
-import net.minecraft.item.BlockItemUseContext;
-import net.minecraft.pathfinding.PathType;
-import net.minecraft.state.StateContainer;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.Direction;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.IBlockReader;
-import net.minecraft.world.IWorld;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.PipeBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -20,39 +21,39 @@ import javax.annotation.ParametersAreNonnullByDefault;
 @SuppressWarnings("deprecation")
 @MethodsReturnNonnullByDefault
 @ParametersAreNonnullByDefault
-public class TubeBlock extends SixWayBlock{
+public class TubeBlock extends PipeBlock implements EntityBlock {
 	
-	public TubeBlock(Properties properties){
+	public TubeBlock(BlockBehaviour.Properties properties){
 		super(.1875f, properties);
-		setDefaultState(this.stateContainer.getBaseState()
-				.with(NORTH, Boolean.FALSE)
-				.with(EAST, Boolean.FALSE)
-				.with(SOUTH, Boolean.FALSE)
-				.with(WEST, Boolean.FALSE)
-				.with(UP, Boolean.FALSE)
-				.with(DOWN, Boolean.FALSE));
+		this.registerDefaultState(this.stateDefinition.any()
+				.setValue(NORTH, Boolean.FALSE)
+				.setValue(EAST, Boolean.FALSE)
+				.setValue(SOUTH, Boolean.FALSE)
+				.setValue(WEST, Boolean.FALSE)
+				.setValue(UP, Boolean.FALSE)
+				.setValue(DOWN, Boolean.FALSE));
 	}
 	
-	private boolean isVisHolder(IBlockReader world, BlockPos pos){
+	private boolean isVisHolder(BlockGetter world, BlockPos pos){
 		Block block = world.getBlockState(pos).getBlock();
-		TileEntity tile = world.getTileEntity(pos);
+		BlockEntity tile = world.getBlockEntity(pos);
 		return (tile != null && tile.getCapability(AspectHandlerCapability.ASPECT_HANDLER).isPresent()) || block instanceof TubeBlock;
 	}
 	
 	// Blockstate stuff
 	
-	public BlockState getStateForPlacement(BlockItemUseContext context){
-		return this.makeConnections(context.getWorld(), context.getPos());
+	public BlockState getStateForPlacement(BlockPlaceContext context){
+		return this.makeConnections(context.getLevel(), context.getClickedPos());
 	}
 	
-	public BlockState makeConnections(IBlockReader world, BlockPos pos){
-		return this.getDefaultState()
-				.with(DOWN, isVisHolder(world, pos.down()))
-				.with(UP, isVisHolder(world, pos.up()))
-				.with(NORTH, isVisHolder(world, pos.north()))
-				.with(EAST, isVisHolder(world, pos.east()))
-				.with(SOUTH, isVisHolder(world, pos.south()))
-				.with(WEST, isVisHolder(world, pos.west()));
+	public BlockState makeConnections(BlockGetter world, BlockPos pos){
+		return this.defaultBlockState()
+				.setValue(DOWN, isVisHolder(world, pos.below()))
+				.setValue(UP, isVisHolder(world, pos.above()))
+				.setValue(NORTH, isVisHolder(world, pos.north()))
+				.setValue(EAST, isVisHolder(world, pos.east()))
+				.setValue(SOUTH, isVisHolder(world, pos.south()))
+				.setValue(WEST, isVisHolder(world, pos.west()));
 	}
 	
 	/**
@@ -61,27 +62,27 @@ public class TubeBlock extends SixWayBlock{
 	 * returns its solidified counterpart.
 	 * Note that this method should ideally consider only the specific face passed in.
 	 */
-	public BlockState updatePostPlacement(BlockState state, Direction facing, BlockState facingState, IWorld world, BlockPos currentPos, BlockPos facingPos){
+	public BlockState updateShape(BlockState state, Direction facing, BlockState facingState, LevelAccessor world, BlockPos currentPos, BlockPos facingPos){
 		boolean flag = isVisHolder(world, facingPos);
-		return state.with(FACING_TO_PROPERTY_MAP.get(facing), flag);
+		return state.setValue(PROPERTY_BY_DIRECTION.get(facing), flag);
 	}
 	
-	protected void fillStateContainer(StateContainer.Builder<Block, BlockState> builder){
+	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder){
 		builder.add(NORTH, EAST, SOUTH, WEST, UP, DOWN);
 	}
 	
-	public boolean allowsMovement(BlockState state, IBlockReader worldIn, BlockPos pos, PathType type){
-		return false;
-	}
+//	public boolean allowsMovement(BlockState state, BlockGetter worldIn, BlockPos pos, PathType type){
+//		return false;
+//	}
 	
-	@Override
-	public boolean hasTileEntity(BlockState state){
-		return true;
-	}
+//	@Override
+//	public boolean hasBlockEntity(BlockState state){
+//		return true;
+//	}
 	
 	@Nullable
 	@Override
-	public TileEntity createTileEntity(BlockState state, IBlockReader world){
-		return new TubeTileEntity();
+	public BlockEntity newBlockEntity(BlockPos pos, BlockState state){
+		return new TubeBlockEntity(pos, state);
 	}
 }

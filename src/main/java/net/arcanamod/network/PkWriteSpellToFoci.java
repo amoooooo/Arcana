@@ -1,34 +1,29 @@
 package net.arcanamod.network;
 
-import net.arcanamod.blocks.tiles.FociForgeTileEntity;
-import net.arcanamod.items.ArcanaItems;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
 public class PkWriteSpellToFoci {
 
 	ItemStack focus;
-	CompoundNBT focusNBT;
+	CompoundTag focusNBT;
 
-	public PkWriteSpellToFoci(ItemStack focus, CompoundNBT focusNBT){
+	public PkWriteSpellToFoci(ItemStack focus, CompoundTag focusNBT){
 		this.focus = focus;
 		this.focusNBT = focusNBT;
 	}
 
-	public static void encode(PkWriteSpellToFoci msg, PacketBuffer buffer){
-		buffer.writeCompoundTag(msg.focusNBT);
-		buffer.writeItemStack(msg.focus);
+	public static void encode(PkWriteSpellToFoci msg, FriendlyByteBuf buffer){
+		buffer.writeNbt(msg.focusNBT);
+		buffer.writeItemStack(msg.focus, false);
 	}
 
-	public static PkWriteSpellToFoci decode(PacketBuffer buffer){
-		return new PkWriteSpellToFoci(buffer.readItemStack(), buffer.readCompoundTag());
+	public static PkWriteSpellToFoci decode(FriendlyByteBuf buffer){
+		return new PkWriteSpellToFoci(buffer.readItem(), buffer.readNbt());
 	}
 
 	public static void handle(PkWriteSpellToFoci msg, Supplier<NetworkEvent.Context> supplier){

@@ -5,16 +5,16 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.arcanamod.Arcana;
 import net.arcanamod.aspects.handlers.AspectHandler;
-import net.arcanamod.containers.ResearchTableContainer;
+import net.arcanamod.containers.ResearchTableMenu;
 import net.arcanamod.containers.slots.AspectSlot;
 import net.arcanamod.systems.research.Puzzle;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.CraftingInventory;
-import net.minecraft.inventory.container.Slot;
-import net.minecraft.item.crafting.ICraftingRecipe;
-import net.minecraft.item.crafting.IRecipe;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.CraftingContainer;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.crafting.CraftingRecipe;
+import net.minecraft.world.item.crafting.Recipe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -60,20 +60,20 @@ public class Guesswork extends Puzzle{
 		this.hints = hintMap;
 	}
 	
-	public CompoundNBT getData(){
-		CompoundNBT compound = new CompoundNBT();
-		CompoundNBT hints = new CompoundNBT();
+	public CompoundTag getData(){
+		CompoundTag compound = new CompoundTag();
+		CompoundTag hints = new CompoundTag();
 		getHints().forEach((location, s) -> hints.putString(location.toString(), s));
 		compound.putString("recipe", getRecipe().toString());
 		compound.put("hints", hints);
 		return compound;
 	}
 	
-	public static Guesswork fromNBT(CompoundNBT passData){
+	public static Guesswork fromNBT(CompoundTag passData){
 		ResourceLocation recipe = new ResourceLocation(passData.getString("recipe"));
 		Map<ResourceLocation, String> hints = new LinkedHashMap<>();
-		CompoundNBT serialHints = passData.getCompound("hints");
-		for(String s : serialHints.keySet())
+		CompoundTag serialHints = passData.getCompound("hints");
+		for(String s : serialHints.getAllKeys())
 			hints.put(new ResourceLocation(s), serialHints.getString(s));
 		return new Guesswork(recipe, hints);
 	}
@@ -98,9 +98,9 @@ public class Guesswork extends Puzzle{
 		return ICON;
 	}
 	
-	public List<Puzzle.SlotInfo> getItemSlotLocations(PlayerEntity player){
+	public List<Puzzle.SlotInfo> getItemSlotLocations(Player player){
 		List<Puzzle.SlotInfo> ret = new ArrayList<>();
-		IRecipe<?> recipe = player.world.getRecipeManager().getRecipe(getRecipe()).orElse(null);
+		Recipe<?> recipe = player.level.getRecipeManager().byKey(getRecipe()).orElse(null);
 		if(recipe != null)
 			for(int y = 0; y < 3; y++)
 				for(int x = 0; x < 3; x++){
@@ -108,7 +108,7 @@ public class Guesswork extends Puzzle{
 					int yy = y * 23;
 					int scX = xx + 141 + 75;
 					int scY = yy + 35 + 54;
-					if(recipe.getIngredients().size() > (x + y * 3) && recipe.getIngredients().get(x + y * 3).getMatchingStacks().length > 0)
+					if(recipe.getIngredients().size() > (x + y * 3) && recipe.getIngredients().get(x + y * 3).getItems().length > 0)
 						ret.add(new SlotInfo(scX, scY, 1, BG_NAME));
 					else
 						ret.add(new SlotInfo(scX, scY));
@@ -120,19 +120,19 @@ public class Guesswork extends Puzzle{
 		return Collections.emptyList();
 	}
 	
-	public boolean validate(List<AspectSlot> aspectSlots, List<Slot> itemSlots, PlayerEntity player, ResearchTableContainer container){
+	public boolean validate(List<AspectSlot> aspectSlots, List<Slot> itemSlots, Player player, ResearchTableMenu container){
 		if(player == null)
 			return false;
-		IRecipe<?> recipe = player.world.getRecipeManager().getRecipe(getRecipe()).orElse(null);
-		if(!(recipe instanceof ICraftingRecipe))
+		Recipe<?> recipe = player.level.getRecipeManager().byKey(getRecipe()).orElse(null);
+		if(!(recipe instanceof CraftingRecipe))
 			return false;
-		CraftingInventory inv = new CraftingInventory(container, 3, 3);
+		CraftingContainer inv = new CraftingContainer(container, 3, 3);
 		for(int i = 0; i < itemSlots.size(); i++){
 			Slot slot = itemSlots.get(i);
-			if (slot.getStack()!=null)
-				inv.setInventorySlotContents(i, slot.getStack());
+			if (slot.getItem()!=null)
+				inv.setItem(i, slot.getItem());
 		}
-		return ((ICraftingRecipe)recipe).matches(inv, player.world);
+		return ((CraftingRecipe)recipe).matches(inv, player.level);
 	}
 	
 	public boolean equals(Object o){

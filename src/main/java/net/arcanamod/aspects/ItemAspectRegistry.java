@@ -1,27 +1,27 @@
 package net.arcanamod.aspects;
 
 import com.google.gson.*;
+import com.mojang.realmsclient.util.JsonUtils;
 import net.arcanamod.aspects.handlers.AspectHandler;
 import net.arcanamod.aspects.handlers.AspectHolder;
 import net.arcanamod.items.CrystalItem;
 import net.arcanamod.systems.taint.Taint;
 import net.arcanamod.util.Pair;
 import net.arcanamod.util.StreamUtils;
-import net.minecraft.client.resources.JsonReloadListener;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.item.crafting.IRecipe;
-import net.minecraft.item.crafting.Ingredient;
-import net.minecraft.item.crafting.RecipeManager;
-import net.minecraft.profiler.IProfiler;
-import net.minecraft.resources.IResourceManager;
-import net.minecraft.tags.ITag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.tags.ItemTags;
-import net.minecraft.util.JSONUtils;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.tags.TagKey;
+import net.minecraft.util.profiling.ProfilerFiller;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeManager;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,14 +37,14 @@ import java.util.function.BiConsumer;
  * Items and item tags are associated with sets of aspects in JSON files. Additionally, stack functions, defined in code,
  * can add or remove aspects to an item stack, based on NBT, damage levels, or anything else.
  */
-public class ItemAspectRegistry extends JsonReloadListener{
+public class ItemAspectRegistry extends SimpleJsonResourceReloadListener {
 	
 	private static final Logger LOGGER = LogManager.getLogger();
 	public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 	private static boolean processing = false;
 	
 	private static Map<Item, List<AspectStack>> itemAssociations = new HashMap<>();
-	private static Map<ITag<Item>, List<AspectStack>> itemTagAssociations = new HashMap<>();
+	private static Map<TagKey<Item>, List<AspectStack>> itemTagAssociations = new HashMap<>();
 	private static Collection<BiConsumer<ItemStack, List<AspectStack>>> stackFunctions = new ArrayList<>();
 	
 	private static Map<Item, List<AspectStack>> itemAspects = new HashMap<>();
@@ -68,7 +68,7 @@ public class ItemAspectRegistry extends JsonReloadListener{
 		return squish(itemAspects);
 	}
 	
-	protected void apply(@Nonnull Map<ResourceLocation, JsonElement> objects, @Nonnull IResourceManager resourceManager, @Nonnull IProfiler profiler){
+	protected void apply(@Nonnull Map<ResourceLocation, JsonElement> objects, @Nonnull ResourceManager resourceManager, @Nonnull ProfilerFiller profiler){
 		// remove existing data
 		processing = true;
 		itemAssociations.clear();
@@ -82,25 +82,37 @@ public class ItemAspectRegistry extends JsonReloadListener{
 		
 		// compute aspect assignment
 		// for every item defined, give them aspects
-		itemAssociations.forEach((key, value) -> itemAspects.merge(key, value, (left, right) -> {
-			List<AspectStack> news = new ArrayList<>(left);
-			news.addAll(right);
-			return news;
-		}));
-		
-		// for every item tag, give them aspects
-		itemTagAssociations.forEach((key, value) -> {
-			for(Item item : key.getAllElements())
-				itemAspects.merge(item, value, (left, right) -> {
-					List<AspectStack> news = new ArrayList<>(left);
-					news.addAll(right);
-					return news;
-				});
+		itemAssociations.forEach((key, value) -> {
+			itemAspects.merge(key, value, (left, right) -> {
+				List<AspectStack> news = new ArrayList<>(left);
+				news.addAll(right);
+				return news;
+			});
+			// Idk...
+			itemTagAssociations.forEach((tag_key, tag_value) -> {
+				if(key.getDefaultInstance().is(tag_key)) {
+					itemAspects.merge(key, tag_value, (left, right) -> {
+						List<AspectStack> news = new ArrayList<>(left);
+						news.addAll(right);
+						return news;
+					});
+				}
+			});
 		});
 		
+		// for every item tag, give them aspects
+//		itemTagAssociations.forEach((key, value) -> {
+//			for(Item item : key.getAllElements())
+//				itemAspects.merge(item, value, (left, right) -> {
+//					List<AspectStack> news = new ArrayList<>(left);
+//					news.addAll(right);
+//					return news;
+//				});
+//		});
+		
 		// for every item not already given aspects in this way, give according to recipes
-		for(IRecipe<?> recipe : recipes.getRecipes()){
-			Item item = recipe.getRecipeOutput().getItem();
+		for(Recipe<?> recipe : recipes.getRecipes()){
+			Item item = recipe.getResultItem().getItem();
 			if(!itemAspects.containsKey(item))
 				itemAspects.put(item, getGenerating(item));
 			// generating avoids getting stuck in recursive loops.
@@ -128,16 +140,16 @@ public class ItemAspectRegistry extends JsonReloadListener{
 		List<AspectStack> ret;
 		List<List<AspectStack>> allGenerated = new ArrayList<>();
 		// consider every recipe that produces this item
-		for(IRecipe<?> recipe : recipes.getRecipes())
-			if(recipe.getRecipeOutput().getItem() == item){
+		for(Recipe<?> recipe : recipes.getRecipes())
+			if(recipe.getResultItem().getItem() == item){
 				List<AspectStack> generated = new ArrayList<>();
 				for(Ingredient ingredient : recipe.getIngredients()){
-					if(ingredient.getMatchingStacks().length > 0){
-						ItemStack first = ingredient.getMatchingStacks()[0];
+					if(ingredient.getItems().length > 0){
+						ItemStack first = ingredient.getItems()[0];
 						if(!generating.contains(first.getItem())){
 							List<AspectStack> ingredients = getGenerating(first);
 							for(AspectStack stack : ingredients)
-								generated.add(new AspectStack(stack.getAspect(), Math.max(stack.getAmount() / recipe.getRecipeOutput().getCount(), 1)));
+								generated.add(new AspectStack(stack.getAspect(), Math.max(stack.getAmount() / recipe.getResultItem().getCount(), 1)));
 						}
 					}
 				}
@@ -186,7 +198,7 @@ public class ItemAspectRegistry extends JsonReloadListener{
 				JsonElement value = entry.getValue();
 				if(key.startsWith("#")){
 					ResourceLocation itemTagLoc = new ResourceLocation(key.substring(1));
-					ITag<Item> itemTag = ItemTags.getCollection().get(itemTagLoc);
+					TagKey<Item> itemTag = ItemTags.create(itemTagLoc);
 					if(itemTag != null)
 						parseAspectStackList(location, value).ifPresent(stacks -> itemTagAssociations.put(itemTag, stacks));
 					else
@@ -211,7 +223,7 @@ public class ItemAspectRegistry extends JsonReloadListener{
 				if(element.isJsonObject()){
 					JsonObject object = element.getAsJsonObject();
 					String aspectName = object.get("aspect").getAsString();
-					int amount = JSONUtils.getInt(object, "amount", 1);
+					int amount = JsonUtils.getIntOr("amount", object, 1);
 					Aspect aspect = AspectUtils.getAspectByName(aspectName);
 					if(aspect != null)
 						ret.add(new AspectStack(aspect, amount));

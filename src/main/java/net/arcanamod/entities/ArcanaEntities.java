@@ -3,11 +3,14 @@ package net.arcanamod.entities;
 import net.arcanamod.Arcana;
 import net.arcanamod.systems.taint.Taint;
 import net.arcanamod.entities.tainted.*;
-import net.minecraft.entity.EntityClassification;
+import net.minecraft.entity.MobCategory;
 import net.minecraft.entity.EntityType;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
 import net.minecraftforge.fml.RegistryObject;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegistryObject;
 
 import static net.arcanamod.Arcana.arcLoc;
 
@@ -24,30 +27,30 @@ public class ArcanaEntities{
 			Arcana.MODID);
 
 	public static final RegistryObject<EntityType<KoalaEntity>> KOALA_ENTITY = ENTITY_TYPES
-			.register("koala_entity", () -> EntityType.Builder.create(KoalaEntity::new, EntityClassification.CREATURE)
+			.register("koala_entity", () -> EntityType.Builder.of(KoalaEntity::new, MobCategory.CREATURE)
 				.size(.6f, .6f).build(arcLoc("koala_entity").toString()));
 
 	public static final RegistryObject<EntityType<SpiritEntity>> DAIR_SPIRIT = ENTITY_TYPES
-			.register("dair_spirit_entity", () -> EntityType.Builder.create(SpiritEntity::new, EntityClassification.CREATURE)
+			.register("dair_spirit_entity", () -> EntityType.Builder.of(SpiritEntity::new, MobCategory.CREATURE)
 					.size(.6f, .6f).build(arcLoc("dair_spirit_entity").toString()));
 
 	public static final RegistryObject<EntityType<SpiritEntity>> WILLOW_SPIRIT = ENTITY_TYPES
-			.register("willow_spirit_entity", () -> EntityType.Builder.create(SpiritEntity::new, EntityClassification.CREATURE)
+			.register("willow_spirit_entity", () -> EntityType.Builder.of(SpiritEntity::new, MobCategory.CREATURE)
 					.size(.6f, .6f).build(arcLoc("willow_spirit_entity").toString()));
 
 	public static final RegistryObject<EntityType<SpellCloudEntity>> SPELL_CLOUD = ENTITY_TYPES
-			.register("spell_cloud", () -> EntityType.Builder.<SpellCloudEntity>create(SpellCloudEntity::new, EntityClassification.MISC)
+			.register("spell_cloud", () -> EntityType.Builder.<SpellCloudEntity>of(SpellCloudEntity::new, MobCategory.MISC)
 					.immuneToFire().size(6, .5f).build(arcLoc("spell_cloud").toString()));
 
 	public static final RegistryObject<EntityType<SpellEggEntity>> SPELL_EGG = ENTITY_TYPES
-			.register("spell_egg", () -> EntityType.Builder.<SpellEggEntity>create(SpellEggEntity::new, EntityClassification.MISC)
+			.register("spell_egg", () -> EntityType.Builder.<SpellEggEntity>of(SpellEggEntity::new, MobCategory.MISC)
 					.immuneToFire().size(.4f, .4f).build(arcLoc("spell_egg").toString()));
 	public static final RegistryObject<EntityType<BlastEmitterEntity>> BLAST_EMITTER = ENTITY_TYPES
-			.register("spell_core", () -> EntityType.Builder.<BlastEmitterEntity>create(BlastEmitterEntity::new, EntityClassification.MISC)
-					.immuneToFire().size(.6f, .6f).build(arcLoc("spell_core").toString()));
+			.register("spell_core", () -> EntityType.Builder.<BlastEmitterEntity>of(BlastEmitterEntity::new, MobCategory.MISC)
+					.fireImmune().sized(.6f, .6f).build(arcLoc("spell_core").toString()));
 
 	public static final RegistryObject<EntityType<TaintBottleEntity>> TAINT_BOTTLE = ENTITY_TYPES
-			.register("taint_in_a_bottle", () -> EntityType.Builder.<TaintBottleEntity>create(TaintBottleEntity::new, EntityClassification.MISC)
+			.register("taint_in_a_bottle", () -> EntityType.Builder.<TaintBottleEntity>of(TaintBottleEntity::new, MobCategory.MISC)
 					.immuneToFire().size(.5f, .5f).build(arcLoc("taint_in_a_bottle").toString()));
 	
 	public static final RegistryObject<EntityType<TaintedSlimeEntity>> TAINTED_SLIME = T_ENTITY_TYPES.register("tainted_slime", () -> Taint.taintedEntityOf(EntityType.SLIME));
@@ -77,6 +80,6 @@ public class ArcanaEntities{
 	public static final RegistryObject<EntityType<TaintedEntity>> TAINTED_WITCH = T_ENTITY_TYPES.register("tainted_witch", () -> Taint.taintedEntityOf(EntityType.WITCH));
 
 	public static final RegistryObject<EntityType<SpellTrapEntity>> SPELL_TRAP = ENTITY_TYPES
-			.register("spell_trap", () -> EntityType.Builder.<SpellTrapEntity>create(SpellTrapEntity::new, EntityClassification.MISC)
+			.register("spell_trap", () -> EntityType.Builder.<SpellTrapEntity>of(SpellTrapEntity::new, MobCategory.MISC)
 					.immuneToFire().size(.4f, .4f).build(arcLoc("spell_trap").toString()));
 }

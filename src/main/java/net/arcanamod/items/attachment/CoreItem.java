@@ -3,8 +3,8 @@
 package net.arcanamod.items.attachment;
 
 import net.arcanamod.systems.spell.MDModifier;
-import net.minecraft.item.Item;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 
 public class CoreItem extends Item implements Core{
 	

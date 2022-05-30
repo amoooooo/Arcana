@@ -3,13 +3,13 @@ package net.arcanamod.systems.research;
 import com.google.gson.*;
 import net.arcanamod.systems.research.impls.ItemRequirement;
 import net.arcanamod.systems.research.impls.ItemTagRequirement;
-import net.minecraft.client.resources.JsonReloadListener;
-import net.minecraft.item.Item;
-import net.minecraft.profiler.IProfiler;
-import net.minecraft.resources.IResourceManager;
-import net.minecraft.tags.ITag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.tags.ItemTags;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.tags.TagKey;
+import net.minecraft.util.profiling.ProfilerFiller;
+import net.minecraft.world.item.Item;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -28,7 +28,7 @@ import java.util.stream.StreamSupport;
  * confusion for addon makers. (If you don't think its verbose, add more logging.)
  */
 @ParametersAreNonnullByDefault
-public class ResearchLoader extends JsonReloadListener {
+public class ResearchLoader extends SimpleJsonResourceReloadListener {
 	
 	private static final Logger LOGGER = LogManager.getLogger();
 	public static final Gson GSON = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
@@ -41,7 +41,7 @@ public class ResearchLoader extends JsonReloadListener {
 	public ResearchLoader(){
 		super(GSON, "arcana/research");
 	}
-	
+
 	private static void applyBooksArray(ResourceLocation rl, JsonArray books){
 		for(JsonElement bookElement : books){
 			if(!bookElement.isJsonObject())
@@ -243,7 +243,7 @@ public class ResearchLoader extends JsonReloadListener {
 				}else if(desc.startsWith("#")){
 					// its a tag
 					ResourceLocation itemTagLoc = new ResourceLocation(desc.substring(1));
-					ITag<Item> itemTag = ItemTags.getCollection().get(itemTagLoc);
+					TagKey<Item> itemTag = ItemTags.create(itemTagLoc);
 					if(itemTag != null){
 						ItemTagRequirement tagReq = new ItemTagRequirement(itemTag, itemTagLoc);
 						tagReq.amount = amount;
@@ -265,8 +265,10 @@ public class ResearchLoader extends JsonReloadListener {
 		}
 		return ret;
 	}
-	
-	protected void apply(Map<ResourceLocation, JsonElement> object, IResourceManager resourceManager, IProfiler profiler){
+
+
+	@Override
+	protected void apply(Map<ResourceLocation, JsonElement> object, ResourceManager resourceManager, ProfilerFiller profiler){
 		bookQueue.clear();
 		categoryQueue.clear();
 		entryQueue.clear();

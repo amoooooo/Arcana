@@ -1,11 +1,11 @@
 package net.arcanamod.network;
 
 import net.arcanamod.capabilities.AuraChunk;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.ChunkStatus;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.ChunkStatus;
+import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
@@ -17,12 +17,12 @@ public class PkRequestNodeSync{
 		this.chunk = chunk;
 	}
 	
-	public static void encode(PkRequestNodeSync msg, PacketBuffer buffer){
+	public static void encode(PkRequestNodeSync msg, FriendlyByteBuf buffer){
 		buffer.writeInt(msg.chunk.x);
 		buffer.writeInt(msg.chunk.z);
 	}
 	
-	public static PkRequestNodeSync decode(PacketBuffer buffer){
+	public static PkRequestNodeSync decode(FriendlyByteBuf buffer){
 		int x = buffer.readInt();
 		int z = buffer.readInt();
 		return new PkRequestNodeSync(new ChunkPos(x, z));
@@ -32,7 +32,7 @@ public class PkRequestNodeSync{
 		supplier.get().enqueueWork(() -> {
 			// I'm on server
 			// Get nodes at chunk
-			Chunk chunk = (Chunk)supplier.get().getSender().world.getChunk(msg.chunk.x, msg.chunk.z, ChunkStatus.FULL, false);
+			ChunkAccess chunk = (ChunkAccess) supplier.get().getSender().level.getChunk(msg.chunk.x, msg.chunk.z, ChunkStatus.FULL, false);
 			if(chunk != null){
 				AuraChunk nc = AuraChunk.getFrom(chunk);
 				// Send a PkSyncChunkNodes

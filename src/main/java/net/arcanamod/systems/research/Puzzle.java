@@ -2,16 +2,16 @@ package net.arcanamod.systems.research;
 
 import com.google.gson.JsonObject;
 import net.arcanamod.aspects.handlers.AspectHandler;
-import net.arcanamod.containers.ResearchTableContainer;
+import net.arcanamod.containers.ResearchTableMenu;
 import net.arcanamod.containers.slots.AspectSlot;
 import net.arcanamod.systems.research.impls.Chemistry;
 import net.arcanamod.systems.research.impls.Fieldwork;
 import net.arcanamod.systems.research.impls.Guesswork;
 import net.arcanamod.systems.research.impls.Thaumaturgy;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.container.Slot;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.Slot;
 
 import javax.annotation.Nullable;
 import java.util.LinkedHashMap;
@@ -27,7 +27,7 @@ public abstract class Puzzle{
 	// I can't bother to add addon support for custom puzzles,
 	// if anyone wants to do that, *then* I'll add it
 	private static Map<String, Supplier<Puzzle>> factories = new LinkedHashMap<>();
-	private static Map<String, Function<CompoundNBT, Puzzle>> deserializers = new LinkedHashMap<>();
+	private static Map<String, Function<CompoundTag, Puzzle>> deserializers = new LinkedHashMap<>();
 	
 	public static Puzzle makePuzzle(String type, @Nullable String desc, ResourceLocation key, @Nullable ResourceLocation icon, JsonObject content, ResourceLocation file){
 		if(getBlank(type) != null){
@@ -45,12 +45,12 @@ public abstract class Puzzle{
 		return factories.get(type);
 	}
 	
-	public static Puzzle deserialize(CompoundNBT passData){
+	public static Puzzle deserialize(CompoundTag passData){
 		String type = passData.getString("type");
 		String desc = passData.getString("desc");
 		ResourceLocation key = new ResourceLocation(passData.getString("key"));
 		ResourceLocation icon = new ResourceLocation(passData.getString("icon"));
-		CompoundNBT data = passData.getCompound("data");
+		CompoundTag data = passData.getCompound("data");
 		if(deserializers.get(type) != null){
 			Puzzle puzzle = deserializers.get(type).apply(data);
 			puzzle.key = key;
@@ -81,17 +81,17 @@ public abstract class Puzzle{
 	
 	public abstract String type();
 	
-	public abstract CompoundNBT getData();
+	public abstract CompoundTag getData();
 	
 	public abstract String getDefaultDesc();
 	
 	public abstract ResourceLocation getDefaultIcon();
 	
-	public abstract List<SlotInfo> getItemSlotLocations(PlayerEntity player);
+	public abstract List<SlotInfo> getItemSlotLocations(Player player);
 	
 	public abstract List<AspectSlot> getAspectSlots(Supplier<AspectHandler> returnInv);
 	
-	public abstract boolean validate(List<AspectSlot> aspectSlots, List<Slot> itemSlots, PlayerEntity player, ResearchTableContainer container);
+	public abstract boolean validate(List<AspectSlot> aspectSlots, List<Slot> itemSlots, Player player, ResearchTableMenu container);
 	
 	public String getDesc(){
 		return desc;
@@ -101,8 +101,8 @@ public abstract class Puzzle{
 		return icon;
 	}
 	
-	public CompoundNBT getPassData(){
-		CompoundNBT passData = new CompoundNBT();
+	public CompoundTag getPassData(){
+		CompoundTag passData = new CompoundTag();
 		passData.putString("type", type());
 		passData.putString("key", getKey().toString());
 		passData.putString("desc", getDesc() != null ? getDesc() : "null");

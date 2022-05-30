@@ -12,11 +12,11 @@ import net.arcanamod.systems.spell.casts.Casts;
 import net.arcanamod.systems.spell.casts.ICast;
 import net.arcanamod.util.Pair;
 import net.arcanamod.util.StreamUtils;
-import net.minecraft.client.resources.I18n;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.resources.language.I18n;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -44,10 +44,11 @@ public class AspectUtils {
 		// Addons should be able to create an assets/arcana/... directory and declare their own model & textures, I think.
 		for(Aspect aspect : Aspects.getAll())
 			if(aspect != Aspects.EMPTY){
-				AspectItem item = new AspectItem("aspect_" + aspect.name().toLowerCase());
-				ArcanaItems.ITEMS.register("aspect_" + aspect.name().toLowerCase(), () -> item);
+				String name = "aspect_" + aspect.name().toLowerCase();
+				AspectItem item = new AspectItem(name);
+				ArcanaItems.ITEMS.register(name, () -> item);
 				aspectItems.add(item);
-				Item crystal = new CrystalItem(new Item.Properties().group(Arcana.ITEMS), aspect);
+				Item crystal = new CrystalItem(new Item.Properties().tab(Arcana.ITEMS), aspect);
 				ArcanaItems.ITEMS.register(aspect.name().toLowerCase() + "_crystal", () -> crystal);
 				aspectCrystalItems.put(aspect, crystal);
 			}
@@ -97,14 +98,14 @@ public class AspectUtils {
 	}
 	
 	public static String getLocalizedAspectDisplayName(@Nonnull Aspect aspect) {
-		return I18n.format("aspect." + aspect.name().toLowerCase());
+		return I18n.get("aspect." + aspect.name().toLowerCase());
 	}
 
-	public static void putAspect(CompoundNBT compound, String key, Aspect aspect){
+	public static void putAspect(CompoundTag compound, String key, Aspect aspect){
 		compound.putString(key, aspect.toResourceLocation().toString());
 	}
 
-	public static Aspect getAspect(CompoundNBT compound, String key){
+	public static Aspect getAspect(CompoundTag compound, String key){
 		return Aspect.fromResourceLocation(new ResourceLocation(compound.getString(key)));
 	}
 
@@ -119,7 +120,7 @@ public class AspectUtils {
 		if(name == null)
 			return null;
 		for(Aspect aspect : Aspects.getAll())
-			if(I18n.format("aspect."+aspect.name()).equalsIgnoreCase(name))
+			if(I18n.get("aspect."+aspect.name()).equalsIgnoreCase(name))
 				return aspect;
 		return null;
 	}

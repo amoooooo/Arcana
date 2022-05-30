@@ -1,25 +1,25 @@
 package net.arcanamod.effects;
 
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.potion.Effect;
-import net.minecraft.potion.EffectType;
-import net.minecraft.util.DamageSource;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectCategory;
+import net.minecraft.world.entity.LivingEntity;
 
 import javax.annotation.Nonnull;
 
-public class FrozenEffect extends Effect{
+public class FrozenEffect extends MobEffect {
 	
 	public FrozenEffect(){
-		super(EffectType.HARMFUL, 0x0055FF);
+		super(MobEffectCategory.HARMFUL, 0x0055FF);
 	}
 	
 	@Override
-	public void performEffect(@Nonnull LivingEntity entity, int amplifier){
-		entity.attackEntityFrom(DamageSource.MAGIC, 2.0F);
+	public void applyEffectTick(@Nonnull LivingEntity entity, int amplifier){
+		entity.hurt(DamageSource.MAGIC, 2.0F);
 	}
 	
 	@Override
-	public boolean isReady(int duration, int amplifier){
+	public boolean isDurationEffectTick(int duration, int amplifier){
 		int j = 40 >> amplifier;
 		if (j > 0) {
 			return duration % j == 0;

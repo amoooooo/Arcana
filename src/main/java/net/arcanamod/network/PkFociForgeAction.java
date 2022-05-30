@@ -2,13 +2,11 @@ package net.arcanamod.network;
 
 import net.arcanamod.aspects.Aspect;
 import net.arcanamod.aspects.AspectUtils;
-import net.arcanamod.containers.FociForgeContainer;
+import net.arcanamod.containers.FociForgeMenu;
 import net.arcanamod.systems.spell.SpellState;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
@@ -32,35 +30,35 @@ public class PkFociForgeAction {
         this.aspect = aspect;
     }
 
-    public static void encode(PkFociForgeAction msg, PacketBuffer buffer){
+    public static void encode(PkFociForgeAction msg, FriendlyByteBuf buffer){
         buffer.writeInt(msg.windowId);
-        buffer.writeEnumValue(msg.action);
+        buffer.writeEnum(msg.action);
         buffer.writeShort(msg.ax);
         buffer.writeShort(msg.ay);
         buffer.writeShort(msg.bx);
         buffer.writeShort(msg.by);
         buffer.writeShort(msg.sequence);
-        buffer.writeString(msg.aspect.name());
+        buffer.writeUtf(msg.aspect.name());
     }
 
-    public static PkFociForgeAction decode(PacketBuffer buffer){
+    public static PkFociForgeAction decode(FriendlyByteBuf buffer){
         return new PkFociForgeAction(
                 buffer.readInt(),
-                buffer.readEnumValue(Type.class),
+                buffer.readEnum(Type.class),
                 buffer.readShort(),
                 buffer.readShort(),
                 buffer.readShort(),
                 buffer.readShort(),
                 buffer.readShort(),
-                AspectUtils.getAspectByName(buffer.readString()));
+                AspectUtils.getAspectByName(buffer.readUtf()));
     }
 
 
     public static void handle(PkFociForgeAction msg, Supplier<NetworkEvent.Context> supplier){
         supplier.get().enqueueWork(() -> {
-            ServerPlayerEntity spe = supplier.get().getSender();
-            if (spe.currentWindowId == msg.windowId) {
-                FociForgeContainer container = (FociForgeContainer)spe.openContainer;
+            ServerPlayer spe = supplier.get().getSender();
+            if (spe.containerCounter == msg.windowId) {
+                FociForgeMenu container = (FociForgeMenu) spe.containerMenu;
                 SpellState state = container.te.spellState;
                 boolean valid = false;
                 if (msg.sequence == state.sequence) {
@@ -69,16 +67,16 @@ public class PkFociForgeAction {
                             valid = state.place(msg.ax, msg.ay, msg.bx, false);
                             break;
                         case RAISE:
-                            valid = state.raise(msg.ax, msg.ay, spe.getUniqueID(), false);
+                            valid = state.raise(msg.ax, msg.ay, spe.getUUID(), false);
                             break;
                         case LOWER:
-                            valid = state.lower(msg.ax, msg.ay, msg.bx, msg.by, spe.getUniqueID(), false);
+                            valid = state.lower(msg.ax, msg.ay, msg.bx, msg.by, spe.getUUID(), false);
                             break;
                         case CONNECT:
                             valid = state.connect(msg.ax, msg.ay, msg.bx, msg.by, false);
                             break;
                         case DELETE:
-                            valid = state.delete(msg.ax, msg.ay, spe.getUniqueID(), false);
+                            valid = state.delete(msg.ax, msg.ay, spe.getUUID(), false);
                             break;
                         case ASSIGN:
                             valid = state.assign(msg.ax, msg.ay, msg.aspect, false);
@@ -87,7 +85,7 @@ public class PkFociForgeAction {
                 }
                 if (valid) {
                     state.sequence++;
-                    container.te.markDirty();
+                    container.te.setChanged();
                 }
             }
         });

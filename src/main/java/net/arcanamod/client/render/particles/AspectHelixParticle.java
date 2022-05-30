@@ -2,23 +2,27 @@ package net.arcanamod.client.render.particles;
 
 import mcp.MethodsReturnNonnullByDefault;
 import net.arcanamod.util.LocalAxis;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.*;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
+import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
 @ParametersAreNonnullByDefault
 @MethodsReturnNonnullByDefault
-public class AspectHelixParticle extends SpriteTexturedParticle{
+public class AspectHelixParticle extends TextureSheetParticle{
 	
 	private float time;
-	private final IAnimatedSprite spriteSheet;
-	private final Vector3d direction;
+	private final TextureAtlasSprite spriteSheet;
+	private final Vec3 direction;
 	
-	protected AspectHelixParticle(ClientWorld world, double x, double y, double z, IAnimatedSprite spriteSheet, AspectHelixParticleData data){
+	protected AspectHelixParticle(ClientLevel world, double x, double y, double z, TextureAtlasSprite spriteSheet, AspectHelixParticleOption data){
 		super(world, x, y, z);
 		this.spriteSheet = spriteSheet;
 		selectSpriteWithAge(spriteSheet);

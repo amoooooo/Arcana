@@ -9,20 +9,20 @@ import net.arcanamod.aspects.Aspects;
 import net.arcanamod.aspects.ItemAspectRegistry;
 import net.arcanamod.aspects.handlers.*;
 import net.arcanamod.client.render.particles.ArcanaParticles;
-import net.arcanamod.client.render.particles.NodeParticleData;
+import net.arcanamod.client.render.particles.NodeParticleOption;
 import net.arcanamod.items.settings.GogglePriority;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.FlowingFluidBlock;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.particles.BlockParticleData;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.BlockParticleOption;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.FluidTags;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.IWorld;
-import net.minecraft.world.server.ServerWorld;
+import net.minecraft.util.Mth;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.LiquidBlock;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.fluids.IFluidBlock;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -67,12 +67,12 @@ public abstract class NodeType{
 		SPECIAL_TYPES.add(PURE);
 	}
 	
-	public void tick(IWorld world, AuraView nodes, Node node){
+	public void tick(Level world, AuraView nodes, Node node){
 		// Display the node
-		if(world.isRemote()){
+		if(world.isClientSide()){
 			GogglePriority priority = GogglePriority.getClientGogglePriority();
 			if(priority == GogglePriority.SHOW_NODE || priority == GogglePriority.SHOW_ASPECTS)
-				world.addParticle(new NodeParticleData(node.nodeUniqueId(), node.type().texture(world, nodes, node)), node.getX(), node.getY(), node.getZ(), 0, 0, 0);
+				world.addParticle(new NodeParticleOption(node.nodeUniqueId(), node.type().texture(world, nodes, node)), node.x(), node.y(), node.z(), 0, 0, 0);
 		}
 		
 		// Regenerate aspects over time
@@ -98,22 +98,22 @@ public abstract class NodeType{
 			node.timeUntilRecharge--;
 	}
 	
-	public abstract ResourceLocation texture(IWorld world, AuraView nodes, Node node);
+	public abstract ResourceLocation texture(Level world, AuraView nodes, Node node);
 	public abstract Collection<ResourceLocation> textures();
 	
-	public int rechargeTime(IWorld world, AuraView nodes, Node node){
+	public int rechargeTime(Level world, AuraView nodes, Node node){
 		return 20 * 60;
 	}
 	
-	public int rechargeCap(IWorld world, AuraView nodes, Node node){
+	public int rechargeCap(Level world, AuraView nodes, Node node){
 		return 23;
 	}
 	
-	public int rechargePower(IWorld world, AuraView nodes, Node node){
+	public int rechargePower(Level world, AuraView nodes, Node node){
 		return 5;
 	}
 	
-	public boolean blocksTaint(IWorld world, AuraView nodes, Node node, BlockPos pos){
+	public boolean blocksTaint(Level world, AuraView nodes, Node node, BlockPos pos){
 		return false;
 	}
 	
@@ -121,7 +121,7 @@ public abstract class NodeType{
 		return TYPES.containsValue(this) ? TYPES.inverse().get(this).toString() : super.toString();
 	}
 	
-	public AspectHandler genBattery(BlockPos location, IWorld world, Random random){
+	public AspectHandler genBattery(BlockPos location, Level world, Random random){
 		AspectBattery battery = new AspectBattery(/*6, -1*/);
 		// 2-4 random primal aspects
 		int primalCount = 2 + random.nextInt(3);
@@ -142,7 +142,7 @@ public abstract class NodeType{
 			}
 		}
 		// if the node is underwater, add 5-10 aqua
-		if(world.getFluidState(location).isTagged(FluidTags.WATER)){
+		if(world.getFluidState(location).is(FluidTags.WATER)){
 			Aspect aspect = Aspects.WATER;
 			int amount = 5 + random.nextInt(6);
 			AspectHolder holder = battery.findFirstHolderContaining(aspect);
@@ -161,7 +161,7 @@ public abstract class NodeType{
 	
 	public static class NormalNodeType extends NodeType{
 		
-		public ResourceLocation texture(IWorld world, AuraView nodes, Node node){
+		public ResourceLocation texture(Level world, AuraView nodes, Node node){
 			return arcLoc("nodes/normal_node");
 		}
 		
@@ -172,7 +172,7 @@ public abstract class NodeType{
 	
 	public static class BrightNodeType extends NodeType{
 		
-		public ResourceLocation texture(IWorld world, AuraView nodes, Node node){
+		public ResourceLocation texture(Level world, AuraView nodes, Node node){
 			return arcLoc("nodes/bright_node");
 		}
 		
@@ -181,29 +181,29 @@ public abstract class NodeType{
 		}
 		
 		// Add 50% to all aspects
-		public AspectHandler genBattery(BlockPos location, IWorld world, Random random){
+		public AspectHandler genBattery(BlockPos location, Level world, Random random){
 			AspectHandler handler = super.genBattery(location, world, random);
 			for(AspectHolder holder : handler.getHolders())
 				holder.insert(holder.getStack().getAmount() / 2, false);
 			return handler;
 		}
 		
-		public int rechargeTime(IWorld world, AuraView nodes, Node node){
+		public int rechargeTime(Level world, AuraView nodes, Node node){
 			return 20 * 45;
 		}
 		
-		public int rechargeCap(IWorld world, AuraView nodes, Node node){
+		public int rechargeCap(Level world, AuraView nodes, Node node){
 			return 47;
 		}
 		
-		public int rechargePower(IWorld world, AuraView nodes, Node node){
+		public int rechargePower(Level world, AuraView nodes, Node node){
 			return 7;
 		}
 	}
 	
 	public static class PaleNodeType extends NodeType{
 		
-		public ResourceLocation texture(IWorld world, AuraView nodes, Node node){
+		public ResourceLocation texture(Level world, AuraView nodes, Node node){
 			return arcLoc("nodes/fading_node");
 		}
 		
@@ -212,29 +212,29 @@ public abstract class NodeType{
 		}
 		
 		// Remove 30% from all aspects
-		public AspectHandler genBattery(BlockPos location, IWorld world, Random random){
+		public AspectHandler genBattery(BlockPos location, Level world, Random random){
 			AspectHandler handler = super.genBattery(location, world, random);
 			for(AspectHolder holder : handler.getHolders())
 				holder.drain(holder.getStack().getAmount() * .3f, false);
 			return handler;
 		}
 		
-		public int rechargeTime(IWorld world, AuraView nodes, Node node){
+		public int rechargeTime(Level world, AuraView nodes, Node node){
 			return 20 * 75;
 		}
 		
-		public int rechargeCap(IWorld world, AuraView nodes, Node node){
+		public int rechargeCap(Level world, AuraView nodes, Node node){
 			return 11;
 		}
 		
-		public int rechargePower(IWorld world, AuraView nodes, Node node){
+		public int rechargePower(Level world, AuraView nodes, Node node){
 			return 4;
 		}
 	}
 	
 	public static class EldritchNodeType extends NodeType{
 		
-		public ResourceLocation texture(IWorld world, AuraView nodes, Node node){
+		public ResourceLocation texture(Level world, AuraView nodes, Node node){
 			return arcLoc("nodes/eldritch_node");
 		}
 		
@@ -243,10 +243,9 @@ public abstract class NodeType{
 		}
 	}
 	
-	@SuppressWarnings("deprecation")
 	public static class HungryNodeType extends NodeType{
 		
-		public ResourceLocation texture(IWorld world, AuraView nodes, Node node){
+		public ResourceLocation texture(Level world, AuraView nodes, Node node){
 			return arcLoc("nodes/hungry_node");
 		}
 		
@@ -254,36 +253,48 @@ public abstract class NodeType{
 			return Collections.singleton(arcLoc("nodes/hungry_node"));
 		}
 		
-		public void tick(IWorld world, AuraView nodes, Node node){
+		public void tick(Level world, AuraView nodes, Node node){
 			super.tick(world, nodes, node);
 			// check all blocks in range
-			int range = (int)(0.7f * MathHelper.sqrt(node.aspects.getHolders().stream().mapToDouble(h -> h.getStack().getAmount()).sum())) + 1;
+			int range = (int)(0.7f * Mth.sqrt((float) node.aspects.getHolders().stream().mapToDouble(h -> h.getStack().getAmount()).sum())) + 1;
 			BlockPos nodePos = new BlockPos(node);
-			BlockPos.Mutable cursor = new BlockPos.Mutable();
+			BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
 			for(int x = -range; x < range; x++)
 				for(int y = -range; y < range; y++)
 					for(int z = -range; z < range; z++){
-						cursor.setPos(nodePos).move(x, y, z);
+						cursor.set(nodePos).move(x, y, z);
 						// if they have air on at least one side
 						BlockState state = world.getBlockState(cursor);
-						if(!state.isAir() && !(state.getBlock() instanceof IFluidBlock || state.getBlock() instanceof FlowingFluidBlock) && (cursor.distanceSq(node, true) < range * range) && (cursor.distanceSq(node, true) < 2 || (emptySpace(world.getBlockState(cursor.up())) || emptySpace(world.getBlockState(cursor.down())) || emptySpace(world.getBlockState(cursor.north())) || emptySpace(world.getBlockState(cursor.south())) || emptySpace(world.getBlockState(cursor.east())) || emptySpace(world.getBlockState(cursor.west()))))){
+						// What. The. Fuck. Is. This. Condition!?
+						if(!state.isAir()
+							&& !(state.getBlock() instanceof IFluidBlock
+							|| state.getBlock() instanceof LiquidBlock)
+							&& (cursor.distToCenterSqr(node) < range * range)
+							&& (cursor.distToCenterSqr(node) < 2
+							|| (emptySpace(world.getBlockState(cursor.above()))
+							|| emptySpace(world.getBlockState(cursor.below()))
+							|| emptySpace(world.getBlockState(cursor.north()))
+							|| emptySpace(world.getBlockState(cursor.south()))
+							|| emptySpace(world.getBlockState(cursor.east()))
+							|| emptySpace(world.getBlockState(cursor.west()))))
+						){
 							// have particles moving from the block to the node
 							float xR = world.getRandom().nextFloat(), yR = world.getRandom().nextFloat(), zR = world.getRandom().nextFloat();
 							if(world.getRandom().nextBoolean())
-								world.addParticle(new BlockParticleData(ArcanaParticles.HUNGRY_NODE_BLOCK_PARTICLE.get(), state).setPos(cursor), cursor.getX() + xR, cursor.getY() + yR, cursor.getZ() + zR, -(x - node.getX() % 1 + xR - 1) / 20f, -(y - node.getY() % 1 + yR) / 20f, -(z - node.getZ() % 1 + zR) / 20f);
+								world.addParticle(new BlockParticleOption(ArcanaParticles.HUNGRY_NODE_BLOCK_PARTICLE.get(), state).setPos(cursor), cursor.getX() + xR, cursor.getY() + yR, cursor.getZ() + zR, -(x - node.x() % 1 + xR - 1) / 20f, -(y - node.y() % 1 + yR) / 20f, -(z - node.z() % 1 + zR) / 20f);
 							// TODO: minimum time to break (instead of pure random)
-							if(!world.isRemote()){
-								float hardness = state.getBlockHardness(world, cursor);
+							if(!world.isClientSide()){
+								float hardness = state.getDestroySpeed(world, cursor);
 								if(hardness != -1 && world.getRandom().nextInt((int)(hardness * 300) + 1) == 0){
 									// note down that the block has been broken
-									CompoundNBT blocks = node.getData().getCompound("blocks");
+									CompoundTag blocks = node.getData().getCompound("blocks");
 									node.getData().put("blocks", blocks);
 									String key = Objects.requireNonNull(state.getBlock().getRegistryName()).toString();
 									blocks.putInt(key, blocks.getInt(key) + 1);
 									// gain a fraction of that block's aspects
 									if(ArcanaConfig.HUNGRY_NODE_ASPECT_CARRY_FRACTION.get() > 0){
-										if(world instanceof ServerWorld)
-											for(ItemStack drop : Block.getDrops(state, (ServerWorld)world, cursor, world.getTileEntity(cursor)))
+										if(world instanceof ServerLevel)
+											for(ItemStack drop : Block.getDrops(state, (ServerLevel) world, cursor, world.getBlockEntity(cursor)))
 												for(AspectStack stack : ItemAspectRegistry.get(drop)){
 													int toInsert = (int)Math.max(1, stack.getAmount() * ArcanaConfig.HUNGRY_NODE_ASPECT_CARRY_FRACTION.get());
 													VisUtils.moveAspects(stack.getAspect(), toInsert, node.aspects, -1);
@@ -300,25 +311,25 @@ public abstract class NodeType{
 					}
 			// make disc particles
 			// disc radius = 1/3 * pull radius
-			CompoundNBT blocks = node.getData().getCompound("blocks");
-			if(blocks.keySet().size() > 0){
+			CompoundTag blocks = node.getData().getCompound("blocks");
+			if(blocks.getAllKeys().size() > 0){
 				float discRad = (float)(range * (1 / 3f) + world.getRandom().nextGaussian() / 5f);
 				float xPos = (float)(node.x);
 				float zPos = (float)(node.z - discRad);
 				// TODO: weighted selection
-				BlockState state = Objects.requireNonNull(ForgeRegistries.BLOCKS.getValue(new ResourceLocation(blocks.keySet().toArray(new String[0])[world.getRandom().nextInt(blocks.keySet().size())]))).getDefaultState();
-				world.addParticle(new BlockParticleData(ArcanaParticles.HUNGRY_NODE_DISC_PARTICLE.get(), state).setPos(nodePos), xPos, node.y, zPos, discRad / 6f, 0, discRad / 6f);
+				BlockState state = Objects.requireNonNull(ForgeRegistries.BLOCKS.getValue(new ResourceLocation(blocks.getAllKeys().toArray(new String[0])[world.getRandom().nextInt(blocks.getAllKeys().size())]))).defaultBlockState();
+				world.addParticle(new BlockParticleOption(ArcanaParticles.HUNGRY_NODE_DISC_PARTICLE.get(), state).setPos(nodePos), xPos, node.y, zPos, discRad / 6f, 0, discRad / 6f);
 			}
 		}
 		
 		private static boolean emptySpace(BlockState state){
-			return state.isAir() || state.getBlock() instanceof IFluidBlock || state.getBlock() instanceof FlowingFluidBlock;
+			return state.isAir() || state.getBlock() instanceof IFluidBlock || state.getBlock() instanceof LiquidBlock;
 		}
 	}
 
 	public static class PureNodeType extends NodeType{
 
-		public ResourceLocation texture(IWorld world, AuraView nodes, Node node){
+		public ResourceLocation texture(Level world, AuraView nodes, Node node){
 			return arcLoc("nodes/pure_node");
 		}
 
@@ -326,14 +337,14 @@ public abstract class NodeType{
 			return Collections.singleton(arcLoc("nodes/pure_node"));
 		}
 		
-		public boolean blocksTaint(IWorld world, AuraView nodes, Node node, BlockPos pos){
+		public boolean blocksTaint(Level world, AuraView nodes, Node node, BlockPos pos){
 			return true;
 		}
 	}
 	
 	public static class TaintedNodeType extends NodeType{
 		
-		public ResourceLocation texture(IWorld world, AuraView nodes, Node node){
+		public ResourceLocation texture(Level world, AuraView nodes, Node node){
 			return arcLoc("nodes/tainted_node");
 		}
 		
@@ -341,7 +352,7 @@ public abstract class NodeType{
 			return Collections.singleton(arcLoc("nodes/tainted_node"));
 		}
 		
-		public AspectHandler genBattery(BlockPos location, IWorld world, Random random){
+		public AspectHandler genBattery(BlockPos location, Level world, Random random){
 			AspectBattery handler = (AspectBattery)super.genBattery(location, world, random);
 			// Add 5-15 taint
 			// This is only accessible using /arcana-nodes

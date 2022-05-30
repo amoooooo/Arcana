@@ -7,14 +7,14 @@ import net.arcanamod.effects.ArcanaEffects;
 import net.arcanamod.systems.spell.SpellValues;
 import net.arcanamod.systems.spell.casts.Cast;
 import net.arcanamod.world.WorldInteractions;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.potion.EffectInstance;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 
 import static net.arcanamod.aspects.Aspects.ICE;
 
@@ -25,16 +25,16 @@ public class IceCast extends Cast {
 	}
 
 	@Override
-	public ActionResultType useOnBlock(PlayerEntity caster, World world, BlockPos blockTarget) {
+	public InteractionResult useOnBlock(Player caster, Level world, BlockPos blockTarget) {
 		WorldInteractions.fromWorld(world).freezeBlock(blockTarget);
-		return ActionResultType.SUCCESS;
+		return InteractionResult.SUCCESS;
 	}
 
 	@Override
-	public ActionResultType useOnPlayer(PlayerEntity playerTarget){
-		playerTarget.addPotionEffect(new EffectInstance(ArcanaEffects.FROZEN.get(),getFrozenDuration(),getAmplifier(),false,false));
-		playerTarget.setFire(-80);
-		return ActionResultType.SUCCESS;
+	public InteractionResult useOnPlayer(Player playerTarget){
+		playerTarget.addEffect(new MobEffectInstance(ArcanaEffects.FROZEN.get(),getFrozenDuration(),getAmplifier(),false,false));
+		playerTarget.setRemainingFireTicks(-80);
+		return InteractionResult.SUCCESS;
 	}
 
 	private int getAmplifier() {
@@ -46,12 +46,12 @@ public class IceCast extends Cast {
 	}
 
 	@Override
-	public ActionResultType useOnEntity(PlayerEntity caster, Entity entityTarget){
+	public InteractionResult useOnEntity(Player caster, Entity entityTarget){
 		if (entityTarget instanceof LivingEntity) {
-			((LivingEntity) entityTarget).addPotionEffect(new EffectInstance(ArcanaEffects.FROZEN.get(), getFrozenDuration(), getAmplifier(), false, false));
-			((LivingEntity) entityTarget).setFire(-80);
+			((LivingEntity) entityTarget).addEffect(new MobEffectInstance(ArcanaEffects.FROZEN.get(), getFrozenDuration(), getAmplifier(), false, false));
+			((LivingEntity) entityTarget).setRemainingFireTicks(-80);
 		}
-		return ActionResultType.SUCCESS;
+		return InteractionResult.SUCCESS;
 	}
 
 	@Override

@@ -3,7 +3,6 @@ package net.arcanamod.items.recipes;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
-import mcp.MethodsReturnNonnullByDefault;
 import net.arcanamod.ArcanaConfig;
 import net.arcanamod.aspects.AspectInfluencingRecipe;
 import net.arcanamod.aspects.AspectStack;
@@ -12,14 +11,15 @@ import net.arcanamod.aspects.ItemAspectRegistry;
 import net.arcanamod.capabilities.Researcher;
 import net.arcanamod.systems.research.Parent;
 import net.arcanamod.util.StreamUtils;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.crafting.*;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.JSONUtils;
-import net.minecraft.util.NonNullList;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.world.World;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.core.NonNullList;
+import net.minecraft.core.Registry;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.GsonHelper;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.*;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.registries.ForgeRegistryEntry;
 
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -31,10 +31,10 @@ import static net.arcanamod.ArcanaVariables.arcLoc;
 
 @ParametersAreNonnullByDefault
 @MethodsReturnNonnullByDefault
-public class AlchemyRecipe implements IRecipe<AlchemyInventory>, AspectInfluencingRecipe{
+public class AlchemyRecipe implements Recipe<AlchemyInventory>, AspectInfluencingRecipe{
 	
 	// vanilla registry
-	public static IRecipeType<AlchemyRecipe> ALCHEMY = Registry.register(Registry.RECIPE_TYPE, arcLoc("alchemy"), new IRecipeType<AlchemyRecipe>(){
+	public static RecipeType<AlchemyRecipe> ALCHEMY = Registry.register(Registry.RECIPE_TYPE, arcLoc("alchemy"), new RecipeType<AlchemyRecipe>(){
 		public String toString(){
 			return arcLoc("alchemy").toString();
 		}
@@ -59,7 +59,7 @@ public class AlchemyRecipe implements IRecipe<AlchemyInventory>, AspectInfluenci
 			RECIPES.add(this);
 	}
 	
-	public boolean matches(AlchemyInventory inv, World world){
+	public boolean matches(AlchemyInventory inv, Level world){
 		// correct item
 		return in.test(inv.stack)
 				// and correct research
@@ -68,15 +68,15 @@ public class AlchemyRecipe implements IRecipe<AlchemyInventory>, AspectInfluenci
 				&& aspectsIn.stream().allMatch(stack -> inv.getAspectMap().containsKey(stack.getAspect()) && inv.getAspectMap().get(stack.getAspect()).getAmount() >= stack.getAmount());
 	}
 	
-	public ItemStack getCraftingResult(AlchemyInventory inv){
+	public ItemStack assemble(AlchemyInventory inv){
 		return out.copy();
 	}
 	
-	public boolean canFit(int width, int height){
+	public boolean canCraftInDimensions(int width, int height){
 		return true;
 	}
 	
-	public ItemStack getRecipeOutput(){
+	public ItemStack getResultItem(){
 		return out;
 	}
 	
@@ -94,11 +94,11 @@ public class AlchemyRecipe implements IRecipe<AlchemyInventory>, AspectInfluenci
 		return list;
 	}
 	
-	public IRecipeSerializer<?> getSerializer(){
+	public RecipeSerializer<?> getSerializer(){
 		return ArcanaRecipes.Serializers.ALCHEMY.get();
 	}
 	
-	public IRecipeType<?> getType(){
+	public RecipeType<?> getType(){
 		return ALCHEMY;
 	}
 	
@@ -106,46 +106,46 @@ public class AlchemyRecipe implements IRecipe<AlchemyInventory>, AspectInfluenci
 		in.addAll(aspectsIn.stream().map(stack -> new AspectStack(stack.getAspect(), (int)(stack.getAmount() * ArcanaConfig.ALCHEMY_ASPECT_CARRY_FRACTION.get()))).collect(Collectors.toList()));
 	}
 	
-	public static class Serializer extends ForgeRegistryEntry<IRecipeSerializer<?>> implements IRecipeSerializer<AlchemyRecipe>{
+	public static class Serializer extends ForgeRegistryEntry<RecipeSerializer<?>> implements RecipeSerializer<AlchemyRecipe>{
 		
-		public AlchemyRecipe read(ResourceLocation recipeId, JsonObject json){
-			Ingredient ingredient = Ingredient.deserialize(json.get("in"));
-			ItemStack out = ShapedRecipe.deserializeItem(JSONUtils.getJsonObject(json, "out"));
-			List<AspectStack> aspects = ItemAspectRegistry.parseAspectStackList(recipeId, JSONUtils.getJsonArray(json, "aspects")).orElseThrow(() -> new JsonSyntaxException("Missing aspects in " + recipeId + "!"));
-			List<Parent> research = StreamUtils.toStream(JSONUtils.getJsonArray(json, "research", null))
+		public AlchemyRecipe fromJson(ResourceLocation recipeId, JsonObject json){
+			Ingredient ingredient = Ingredient.fromJson(json.get("in"));
+			ItemStack out = ShapedRecipe.itemStackFromJson(GsonHelper.getAsJsonObject(json, "out"));
+			List<AspectStack> aspects = ItemAspectRegistry.parseAspectStackList(recipeId, GsonHelper.getAsJsonArray(json, "aspects")).orElseThrow(() -> new JsonSyntaxException("Missing aspects in " + recipeId + "!"));
+			List<Parent> research = StreamUtils.toStream(GsonHelper.getAsJsonArray(json, "research", null))
 					.map(JsonElement::getAsString)
 					.map(Parent::parse)
 					.collect(Collectors.toList());
 			return new AlchemyRecipe(ingredient, out, aspects, research, recipeId);
 		}
 		
-		public AlchemyRecipe read(ResourceLocation recipeId, PacketBuffer buffer){
-			Ingredient ingredient = Ingredient.read(buffer);
-			ItemStack out = buffer.readItemStack();
+		public AlchemyRecipe fromNetwork(ResourceLocation recipeId, FriendlyByteBuf buffer){
+			Ingredient ingredient = Ingredient.fromNetwork(buffer);
+			ItemStack out = buffer.readItem();
 			int size = buffer.readVarInt();
 			List<AspectStack> aspects = new ArrayList<>(size);
 			for(int i = 0; i < size; i++)
-				aspects.add(new AspectStack(AspectUtils.getAspectByName(buffer.readString()), buffer.readFloat()));
+				aspects.add(new AspectStack(AspectUtils.getAspectByName(buffer.readUtf()), buffer.readFloat()));
 			
 			size = buffer.readVarInt();
 			List<Parent> requiredResearch = new ArrayList<>(size);
 			for(int i = 0; i < size; i++)
-				requiredResearch.add(Parent.parse(buffer.readString()));
+				requiredResearch.add(Parent.parse(buffer.readUtf()));
 			
 			return new AlchemyRecipe(ingredient, out, aspects, requiredResearch, recipeId);
 		}
 		
-		public void write(PacketBuffer buffer, AlchemyRecipe recipe){
-			recipe.in.write(buffer);
-			buffer.writeItemStack(recipe.out);
+		public void toNetwork(FriendlyByteBuf buffer, AlchemyRecipe recipe){
+			recipe.in.toNetwork(buffer);
+			buffer.writeItemStack(recipe.out, false);
 			buffer.writeVarInt(recipe.aspectsIn.size());
 			for(AspectStack stack : recipe.aspectsIn){
-				buffer.writeString(stack.getAspect().name());
+				buffer.writeUtf(stack.getAspect().name());
 				buffer.writeFloat(stack.getAmount());
 			}
 			buffer.writeVarInt(recipe.requiredResearch.size());
 			for(Parent research : recipe.requiredResearch)
-				buffer.writeString(research.asString());
+				buffer.writeUtf(research.asString());
 		}
 	}
 }

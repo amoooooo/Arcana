@@ -1,8 +1,8 @@
 package net.arcanamod.effects;
 
-import net.minecraft.potion.EffectInstance;
-import net.minecraft.potion.Potion;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.item.alchemy.Potion;
 
 public class ArcanaPotions {
-	public static final Potion TAINT = new Potion(new EffectInstance(ArcanaEffects.TAINTED.get(),80));
+	public static final Potion TAINT = new Potion(new MobEffectInstance(ArcanaEffects.TAINTED.get(),80));
 }

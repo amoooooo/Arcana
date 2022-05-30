@@ -1,35 +1,20 @@
 package net.arcanamod;
 
-import com.google.common.collect.ImmutableList;
 import net.arcanamod.aspects.AspectUtils;
 import net.arcanamod.blocks.ArcanaBlocks;
 import net.arcanamod.blocks.CrystalClusterBlock;
 import net.arcanamod.blocks.bases.GroupedBlock;
 import net.arcanamod.items.CrystalClusterItem;
-import net.arcanamod.worldgen.trees.features.GreatwoodFoliagePlacer;
-import net.arcanamod.worldgen.trees.features.GreatwoodTrunkPlacer;
-import net.arcanamod.worldgen.trees.features.SilverwoodFoliagePlacer;
-import net.arcanamod.worldgen.trees.features.SilverwoodTrunkPlacer;
-import net.minecraft.block.FlowingFluidBlock;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemGroup;
-import net.minecraft.world.gen.blockplacer.SimpleBlockPlacer;
-import net.minecraft.world.gen.blockstateprovider.SimpleBlockStateProvider;
-import net.minecraft.world.gen.feature.*;
-import net.minecraft.world.gen.foliageplacer.BlobFoliagePlacer;
-import net.minecraft.world.gen.placement.AtSurfaceWithExtraConfig;
-import net.minecraft.world.gen.placement.Placement;
-import net.minecraft.world.gen.trunkplacer.StraightTrunkPlacer;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.LiquidBlock;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.RegistryObject;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.registries.IForgeRegistry;
-
-import static net.arcanamod.Arcana.arcLoc;
-import static net.arcanamod.worldgen.ArcanaFeatures.*;
+import net.minecraftforge.registries.RegistryObject;
 
 @EventBusSubscriber(modid = Arcana.MODID, bus = EventBusSubscriber.Bus.MOD)
 public class RegistryHandler{
@@ -40,16 +25,16 @@ public class RegistryHandler{
 		IForgeRegistry<Item> registry = event.getRegistry();
 		ArcanaBlocks.BLOCKS.getEntries().stream().map(RegistryObject::get).forEach(block -> {
 			Item.Properties properties = new Item.Properties();
-			if(!(block instanceof FlowingFluidBlock)){
+			if(!(block instanceof LiquidBlock)){
 				if(block instanceof GroupedBlock){
 					GroupedBlock grouped = (GroupedBlock)block;
-					ItemGroup group = grouped.getGroup();
+					CreativeModeTab group = grouped.getGroup();
 					if(group != null)
-						properties = properties.group(group);
+						properties = properties.tab(group);
 				}else if(block != ArcanaBlocks.WARDENED_BLOCK.orElse(null)
 						&& block != ArcanaBlocks.VACUUM_BLOCK.orElse(null)
 						&& block != ArcanaBlocks.LIGHT_BLOCK.orElse(null))
-					properties = properties.group(Arcana.ITEMS);
+					properties = properties.tab(Arcana.ITEMS);
 				Item blockItem = block instanceof CrystalClusterBlock ? new CrystalClusterItem(block, properties, 3) : new BlockItem(block, properties);
 				blockItem.setRegistryName(block.getRegistryName());
 				registry.register(blockItem);
@@ -57,7 +42,7 @@ public class RegistryHandler{
 		});
 		
 		// yes this has to be here. if you find a better way of doing this, be my guest.
-		
+		/* OK.
 		GREATWOOD_TREE_CONFIG = (new BaseTreeFeatureConfig.Builder(new SimpleBlockStateProvider(ArcanaBlocks.GREATWOOD_LOG.get().getDefaultState()), new SimpleBlockStateProvider(ArcanaBlocks.GREATWOOD_LEAVES.get().getDefaultState()), new GreatwoodFoliagePlacer(FeatureSpread.create(2), FeatureSpread.create(0), 15), new GreatwoodTrunkPlacer(4, 2, 0), new TwoLayerFeature(1, 0, 1))).setIgnoreVines().build();
 		GREATWOOD_TREE = Feature.TREE.withConfiguration(GREATWOOD_TREE_CONFIG);
 		
@@ -89,11 +74,13 @@ public class RegistryHandler{
 		MAGIC_MUSHROOM_PATCH = Feature.RANDOM_PATCH
 				.withConfiguration((new BlockClusterFeatureConfig.Builder(new SimpleBlockStateProvider(ArcanaBlocks.MAGIC_MUSHROOM.get().getDefaultState()), SimpleBlockPlacer.PLACER)).tries(64).preventProjection().build())
 				.withPlacement(Features.Placements.PATCH_PLACEMENT).chance(12);
+
+		 */
 	}
 	
-	@SubscribeEvent(priority = EventPriority.HIGH)
-	public static void onFeatureRegister(RegistryEvent.Register<Feature<?>> event){
-		NODE.setRegistryName(arcLoc("node"));
-		event.getRegistry().register(NODE);
-	}
+//	@SubscribeEvent(priority = EventPriority.HIGH)
+//	public static void onFeatureRegister(RegistryEvent.Register<Feature<?>> event){
+//		NODE.setRegistryName(arcLoc("node"));
+//		event.getRegistry().register(NODE);
+//	}
 }

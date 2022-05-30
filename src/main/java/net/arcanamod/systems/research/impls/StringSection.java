@@ -1,7 +1,7 @@
 package net.arcanamod.systems.research.impls;
 
 import net.arcanamod.systems.research.EntrySection;
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.CompoundTag;
 
 import java.util.Objects;
 
@@ -22,8 +22,8 @@ public class StringSection extends EntrySection{
 		return TYPE;
 	}
 	
-	public CompoundNBT getData(){
-		CompoundNBT tag = new CompoundNBT();
+	public CompoundTag getData(){
+		CompoundTag tag = new CompoundTag();
 		tag.putString("text", getText());
 		return tag;
 	}

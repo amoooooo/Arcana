@@ -2,8 +2,8 @@ package net.arcanamod.capabilities;
 
 import net.arcanamod.world.Node;
 import net.arcanamod.world.NodeType;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.phys.AABB;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 
 import javax.annotation.Nonnull;
@@ -63,7 +63,7 @@ public interface AuraChunk{
 	 *
 	 * @return A set containing all nodes in this chunk within bounds.
 	 */
-	Collection<Node> getNodesWithinAABB(AxisAlignedBB bounds);
+	Collection<Node> getNodesWithinAABB(AABB bounds);
 	
 	/**
 	 * Returns a set containing all nodes in this chunk with the specified node type.
@@ -79,7 +79,7 @@ public interface AuraChunk{
 	 *
 	 * @return A set containing all nodes in this chunk within bounds of the specified type.
 	 */
-	Collection<Node> getNodesOfTypeWithinAABB(NodeType type, AxisAlignedBB bounds);
+	Collection<Node> getNodesOfTypeWithinAABB(NodeType type, AABB bounds);
 	
 	float getFluxLevel();
 	
@@ -105,7 +105,7 @@ public interface AuraChunk{
 	 *
 	 * @return A set containing all nodes in this chunk within bounds, excluding a specified node.
 	 */
-	default Collection<Node> getNodesWithinAABBExcluding(AxisAlignedBB bounds, Node excluded){
+	default Collection<Node> getNodesWithinAABBExcluding(AABB bounds, Node excluded){
 		Collection<Node> all = getNodesWithinAABB(bounds);
 		all.remove(excluded);
 		return all;
@@ -129,15 +129,15 @@ public interface AuraChunk{
 	 *
 	 * @return A set containing all nodes in this chunk within bounds of the specified type, excluding a specified node.
 	 */
-	default Collection<Node> getNodesOfTypeWithinAABBExcluding(NodeType type, AxisAlignedBB bounds, Node excluded){
+	default Collection<Node> getNodesOfTypeWithinAABBExcluding(NodeType type, AABB bounds, Node excluded){
 		Collection<Node> all = getNodesOfTypeWithinAABB(type, bounds);
 		all.remove(excluded);
 		return all;
 	}
 	
-	CompoundNBT serializeNBT();
+	CompoundTag serializeNBT();
 	
-	void deserializeNBT(@Nonnull CompoundNBT data);
+	void deserializeNBT(@Nonnull CompoundTag data);
 	
 	@SuppressWarnings("ConstantConditions")
 	@Nullable

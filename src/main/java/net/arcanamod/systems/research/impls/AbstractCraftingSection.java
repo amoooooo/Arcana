@@ -4,12 +4,11 @@ import net.arcanamod.systems.research.EntrySection;
 import net.arcanamod.systems.research.Icon;
 import net.arcanamod.systems.research.Pin;
 import net.arcanamod.systems.research.ResearchEntry;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.crafting.IRecipe;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.world.World;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Recipe;
 
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -26,8 +25,8 @@ public abstract class AbstractCraftingSection extends EntrySection{
 		this(new ResourceLocation(s));
 	}
 	
-	public CompoundNBT getData(){
-		CompoundNBT compound = new CompoundNBT();
+	public CompoundTag getData(){
+		CompoundTag compound = new CompoundTag();
 		compound.putString("recipe", recipe.toString());
 		return compound;
 	}
@@ -36,12 +35,12 @@ public abstract class AbstractCraftingSection extends EntrySection{
 		return recipe;
 	}
 	
-	public Stream<Pin> getPins(int index, World world, ResearchEntry entry){
+	public Stream<Pin> getPins(int index, ServerLevel world, ResearchEntry entry){
 		// if the recipe exists,
-		Optional<? extends IRecipe<?>> recipe = world.getRecipeManager().getRecipe(this.recipe);
+		Optional<? extends Recipe<?>> recipe = world.getRecipeManager().byKey(this.recipe);
 		if(recipe.isPresent()){
 			// get the item as the icon
-			ItemStack output = recipe.get().getRecipeOutput();
+			ItemStack output = recipe.get().getResultItem();
 			Icon icon = new Icon(output.getItem().getRegistryName(), output);
 			// and return a pin that points to this
 			return Stream.of(new Pin(output.getItem(), entry, index, icon));

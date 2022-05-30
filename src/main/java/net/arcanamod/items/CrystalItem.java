@@ -1,26 +1,26 @@
 package net.arcanamod.items;
 
-import mcp.MethodsReturnNonnullByDefault;
 import net.arcanamod.aspects.Aspect;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
 @ParametersAreNonnullByDefault
 @MethodsReturnNonnullByDefault
-public class CrystalItem extends Item{
-    
+public class CrystalItem extends Item {
     public final Aspect aspect;
     
-    public CrystalItem(Properties properties, Aspect aspect){
+    public CrystalItem(Item.Properties properties, Aspect aspect) {
         super(properties);
         this.aspect = aspect;
     }
-    
-    public ITextComponent getDisplayName(ItemStack stack){
-        return new TranslationTextComponent("item.arcana.crystal", new TranslationTextComponent("aspect." + aspect.name()));
+
+    @Override
+    public Component getName(ItemStack stack) {
+        return new TranslatableComponent("item.arcana.crystal", new TranslatableComponent("aspect." + aspect.name()));
     }
 }

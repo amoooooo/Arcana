@@ -1,7 +1,7 @@
 package net.arcanamod.systems.spell;
 
 import net.arcanamod.aspects.AspectStack;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.world.entity.player.Player;
 
 import java.util.List;
 
@@ -14,7 +14,7 @@ public class MDModifier {
 		}
 	}
 	public static class Warping extends MDModifier {
-		public static void onUse(PlayerEntity playerEntity){
+		public static void onUse(Player playerEntity){
 			//do warp things here...
 		}
 	}

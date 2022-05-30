@@ -1,7 +1,7 @@
 package net.arcanamod.systems.research.impls;
 
 import net.arcanamod.systems.research.EntrySection;
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.CompoundTag;
 
 public class AspectCombosSection extends EntrySection{
 	
@@ -11,7 +11,7 @@ public class AspectCombosSection extends EntrySection{
 		return TYPE;
 	}
 	
-	public CompoundNBT getData(){
-		return new CompoundNBT();
+	public CompoundTag getData(){
+		return new CompoundTag();
 	}
 }

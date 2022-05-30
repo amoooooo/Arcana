@@ -3,50 +3,74 @@ package net.arcanamod.worldgen.trees.features;
 import com.google.common.collect.Lists;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import mcp.MethodsReturnNonnullByDefault;
-import net.arcanamod.Arcana;
-import net.arcanamod.ArcanaConfig;
-import net.arcanamod.aspects.handlers.AspectHandler;
-import net.arcanamod.capabilities.AuraChunk;
-import net.arcanamod.event.WorldTickHandler;
-import net.arcanamod.mixin.TrunkPlacerTypeAccessor;
-import net.arcanamod.world.Node;
-import net.arcanamod.world.NodeType;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MutableBoundingBox;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.gen.IWorldGenerationReader;
-import net.minecraft.world.gen.feature.BaseTreeFeatureConfig;
-import net.minecraft.world.gen.feature.TreeFeature;
-import net.minecraft.world.gen.foliageplacer.FoliagePlacer;
-import net.minecraft.world.gen.trunkplacer.AbstractTrunkPlacer;
-import net.minecraft.world.gen.trunkplacer.TrunkPlacerType;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.LevelSimulatedReader;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.feature.configurations.TreeConfiguration;
+import net.minecraft.world.level.levelgen.feature.foliageplacers.FoliagePlacer;
+import net.minecraft.world.level.levelgen.feature.trunkplacers.TrunkPlacer;
+import net.minecraft.world.level.levelgen.feature.trunkplacers.TrunkPlacerType;
 
 import javax.annotation.ParametersAreNonnullByDefault;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
-
-import static java.util.Objects.requireNonNull;
-import static net.minecraft.world.gen.feature.Feature.isAirAt;
+import java.util.function.BiConsumer;
 
 @ParametersAreNonnullByDefault
 @MethodsReturnNonnullByDefault
-public class SilverwoodTrunkPlacer extends AbstractTrunkPlacer{
+public class SilverwoodTrunkPlacer extends TrunkPlacer {
 	
-	public static final Codec<SilverwoodTrunkPlacer> CODEC = RecordCodecBuilder.create((builderInstance) -> getAbstractTrunkCodec(builderInstance).apply(builderInstance, SilverwoodTrunkPlacer::new));
-	public static final TrunkPlacerType<SilverwoodTrunkPlacer> SILVERWOOD_PLACER = Registry.register(Registry.TRUNK_REPLACER, Arcana.arcLoc("greatwood_placer"), TrunkPlacerTypeAccessor.createTrunkPlacerType(CODEC));
+	public static final Codec<SilverwoodTrunkPlacer> CODEC = RecordCodecBuilder.create((builderInstance) -> trunkPlacerParts(builderInstance).apply(builderInstance, SilverwoodTrunkPlacer::new));
+//	public static final TrunkPlacerType<SilverwoodTrunkPlacer> SILVERWOOD_PLACER = Registry.register(Registry.TRUNK_REPLACER, Arcana.arcLoc("greatwood_placer"), TrunkPlacerTypeAccessor.createTrunkPlacerType(CODEC));
 	
 	public SilverwoodTrunkPlacer(int baseHeight, int heightRandA, int heightRandB){
 		super(baseHeight, heightRandA, heightRandB);
 	}
-	
-	protected TrunkPlacerType<?> getPlacerType(){
-		return SILVERWOOD_PLACER;
+
+	@Override
+	protected TrunkPlacerType<?> type(){
+		return ArcanaTrunkPlacerTypes.SILVERWOOD_TRUNK_PLACER != null ? ArcanaTrunkPlacerTypes.SILVERWOOD_TRUNK_PLACER : TrunkPlacerType.BENDING_TRUNK_PLACER;
 	}
-	
+
+	@Override
+	public List<FoliagePlacer.FoliageAttachment> placeTrunk(
+			LevelSimulatedReader pLevel,
+			BiConsumer<BlockPos, BlockState> pBlockSetter,
+			Random pRandom,
+			int pFreeTreeHeight,
+			BlockPos pPos,
+			TreeConfiguration pConfig
+	) {
+		List<FoliagePlacer.FoliageAttachment> list = Lists.newArrayList();
+		setDirtAt(pLevel, pBlockSetter, pRandom, pPos.below(), pConfig);
+
+		BlockPos.MutableBlockPos blockpos$mutableblockpos = new BlockPos.MutableBlockPos();
+
+		for(int x = -2; x <= 2; x++){
+			for(int z = -2; z <= 2; z++){
+				int dist = Math.abs(x) + Math.abs(z);
+				if(dist <= 2) {
+					int logHeight = pFreeTreeHeight;
+					if(dist == 1){
+						// plus shape: 70% of height
+						logHeight = (int)(pFreeTreeHeight * 0.7) + pRandom.nextInt(2);
+					}else if(dist == 2){
+						// "roots"
+						logHeight = 1 + pRandom.nextInt(2);
+					}
+					// Place the logs
+					generateLogColumn(pLevel, pBlockSetter, pRandom, blockpos$mutableblockpos, pConfig, pPos, logHeight);
+					list.add(new FoliagePlacer.FoliageAttachment(pPos.offset(0, logHeight, 0), 0, false));
+				}
+			}
+		}
+
+
+		return list;
+	}
+
+	/*
 	// more like Generate
 	public List<FoliagePlacer.Foliage> getFoliages(IWorldGenerationReader world, Random rand, int treeHeight, BlockPos pos, Set<BlockPos> logs, MutableBoundingBox box, BaseTreeFeatureConfig config){
 		int height = rand.nextInt(2) + rand.nextInt(2) + 12;
@@ -109,14 +133,12 @@ public class SilverwoodTrunkPlacer extends AbstractTrunkPlacer{
 			return Lists.newArrayList(new FoliagePlacer.Foliage(pos.up(height - 4), 1, false));
 		}
 		return Collections.emptyList();
-	}
+	}*/
 	
-	private void generateLogColumn(IWorldGenerationReader world, Random random, BlockPos start, int height, BaseTreeFeatureConfig config) {
+	private void generateLogColumn(LevelSimulatedReader pLevel, BiConsumer<BlockPos, BlockState> pBlockSetter, Random pRandom, BlockPos.MutableBlockPos pPos, TreeConfiguration pConfig, BlockPos pOffsetPos, int height) {
 		for (int y = 0; y < height; y++) {
-			BlockPos local = start.up(y);
-			if (TreeFeature.isReplaceableAt(world, local)) {
-				world.setBlockState(local, config.trunkProvider.getBlockState(random, local), 3);
-			}
+			pPos.setWithOffset(pOffsetPos, 0, y, 0);
+			placeLogIfFree(pLevel, pBlockSetter, pRandom, pPos, pConfig);
 		}
 	}
 }

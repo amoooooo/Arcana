@@ -3,7 +3,7 @@ package net.arcanamod.aspects.handlers;
 import net.arcanamod.aspects.Aspect;
 import net.arcanamod.aspects.AspectStack;
 import net.arcanamod.aspects.Aspects;
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.CompoundTag;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -73,8 +73,8 @@ public class AspectCell implements AspectHolder{
 		this.overfillingCallback = callback == null ? __ -> {} : callback;
 	}
 	
-	public CompoundNBT serializeNBT(){
-		CompoundNBT nbt = new CompoundNBT();
+	public CompoundTag serializeNBT(){
+		CompoundTag nbt = new CompoundTag();
 		nbt.putFloat("amount", getStack().getAmount());
 		nbt.putFloat("capacity", getCapacity());
 		nbt.putString("aspect", getStack().getAspect().name().toLowerCase());
@@ -83,7 +83,7 @@ public class AspectCell implements AspectHolder{
 		return nbt;
 	}
 	
-	public void deserializeNBT(CompoundNBT data){
+	public void deserializeNBT(CompoundTag data){
 		capacity = data.getInt("capacity");
 		int amount = data.getInt("amount");
 		Aspect aspect = Aspects.valueOf(data.getString("aspect").toUpperCase());
@@ -93,7 +93,7 @@ public class AspectCell implements AspectHolder{
 		setStack(new AspectStack(aspect, amount));
 	}
 	
-	public static AspectCell fromNbt(CompoundNBT data){
+	public static AspectCell fromNbt(CompoundTag data){
 		AspectCell ret = new AspectCell();
 		ret.deserializeNBT(data);
 		return ret;

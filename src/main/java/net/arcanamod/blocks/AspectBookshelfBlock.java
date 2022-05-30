@@ -1,29 +1,34 @@
 package net.arcanamod.blocks;
 
-import mcp.MethodsReturnNonnullByDefault;
 import net.arcanamod.blocks.bases.WaterloggableBlock;
-import net.arcanamod.blocks.tiles.AspectBookshelfTileEntity;
+import net.arcanamod.blocks.tiles.AspectBookshelfBlockEntity;
 import net.arcanamod.items.PhialItem;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.item.ItemEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.InventoryHelper;
-import net.minecraft.inventory.container.INamedContainerProvider;
-import net.minecraft.item.BlockItemUseContext;
-import net.minecraft.item.ItemStack;
-import net.minecraft.state.BooleanProperty;
-import net.minecraft.state.DirectionProperty;
-import net.minecraft.state.StateContainer;
-import net.minecraft.state.properties.BlockStateProperties;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.*;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.BlockRayTraceResult;
-import net.minecraft.util.math.shapes.ISelectionContext;
-import net.minecraft.util.math.shapes.VoxelShape;
-import net.minecraft.world.IBlockReader;
-import net.minecraft.world.World;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.Containers;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -33,62 +38,65 @@ import static net.arcanamod.ArcanaSounds.playPhialshelfSlideSound;
 @SuppressWarnings("deprecation")
 @ParametersAreNonnullByDefault
 @MethodsReturnNonnullByDefault
-public class AspectBookshelfBlock extends WaterloggableBlock{
+public class AspectBookshelfBlock extends WaterloggableBlock implements EntityBlock {
 	public static final DirectionProperty HORIZONTAL_FACING = BlockStateProperties.FACING;
 	public static final BooleanProperty FULL_SIZE = BlockStateProperties.EXTENDED;
-	public VoxelShape SHAPE_NORTH = Block.makeCuboidShape(0, 0, 8, 16, 16, 16);
-	public VoxelShape SHAPE_SOUTH = Block.makeCuboidShape(0, 0, 0, 16, 16, 8);
-	public VoxelShape SHAPE_EAST = Block.makeCuboidShape(0, 0, 0, 8, 16, 16);
-	public VoxelShape SHAPE_WEST = Block.makeCuboidShape(8, 0, 0, 16, 16, 16);
-	public VoxelShape SHAPE_UP = Block.makeCuboidShape(0, 8, 0, 16, 16, 16);
-	public VoxelShape SHAPE_DOWN = Block.makeCuboidShape(0, 0, 0, 16, 8, 16);
+	public VoxelShape SHAPE_NORTH = Block.box(0, 0, 8, 16, 16, 16);
+	public VoxelShape SHAPE_SOUTH = Block.box(0, 0, 0, 16, 16, 8);
+	public VoxelShape SHAPE_EAST = Block.box(0, 0, 0, 8, 16, 16);
+	public VoxelShape SHAPE_WEST = Block.box(8, 0, 0, 16, 16, 16);
+	public VoxelShape SHAPE_UP = Block.box(0, 8, 0, 16, 16, 16);
+	public VoxelShape SHAPE_DOWN = Block.box(0, 0, 0, 16, 8, 16);
 
 	public AspectBookshelfBlock(boolean fullBlock, Properties properties){
 		super(properties);
-		setDefaultState(stateContainer.getBaseState().with(HORIZONTAL_FACING, Direction.NORTH).with(WATERLOGGED, Boolean.FALSE).with(FULL_SIZE, fullBlock));
+		this.registerDefaultState(this.stateDefinition.any()
+			.setValue(HORIZONTAL_FACING, Direction.NORTH)
+			.setValue(WATERLOGGED, Boolean.FALSE)
+			.setValue(FULL_SIZE, fullBlock));
 	}
 
-	public void onReplaced(BlockState state, World worldIn, BlockPos pos, BlockState newState, boolean isMoving) {
+	public void onRemove(BlockState state, Level worldIn, BlockPos pos, BlockState newState, boolean isMoving) {
 		if (state.getBlock() != newState.getBlock()) {
-			TileEntity tileentity = worldIn.getTileEntity(pos);
-			if (tileentity instanceof AspectBookshelfTileEntity) {
-				InventoryHelper.dropInventoryItems(worldIn, pos, (AspectBookshelfTileEntity)tileentity);
+			BlockEntity tileentity = worldIn.getBlockEntity(pos);
+			if (tileentity instanceof AspectBookshelfBlockEntity) {
+				Containers.dropContents(worldIn, pos, (AspectBookshelfBlockEntity)tileentity);
 			}
-			super.onReplaced(state, worldIn, pos, newState, isMoving);
+			super.onRemove(state, worldIn, pos, newState, isMoving);
 		}
 	}
 
-	public boolean eventReceived(BlockState state, World worldIn, BlockPos pos, int id, int param) {
-		super.eventReceived(state, worldIn, pos, id, param);
-		TileEntity tileentity = worldIn.getTileEntity(pos);
-		return tileentity != null && tileentity.receiveClientEvent(id, param);
+	public boolean triggerEvent(BlockState state, Level worldIn, BlockPos pos, int id, int param) {
+		super.triggerEvent(state, worldIn, pos, id, param);
+		BlockEntity tileentity = worldIn.getBlockEntity(pos);
+		return tileentity != null && tileentity.triggerEvent(id, param);
 	}
 
 	@Nullable
-	public INamedContainerProvider getContainer(BlockState state, World worldIn, BlockPos pos) {
-		TileEntity tileentity = worldIn.getTileEntity(pos);
-		return tileentity instanceof INamedContainerProvider ? (INamedContainerProvider)tileentity : null;
+	public MenuProvider getMenuProvider(BlockState state, Level worldIn, BlockPos pos) {
+		BlockEntity tileentity = worldIn.getBlockEntity(pos);
+		return tileentity instanceof MenuProvider ? (MenuProvider) tileentity : null;
 	}
 
-	public BlockState getStateForPlacement(BlockItemUseContext context){
+	public BlockState getStateForPlacement(BlockPlaceContext context){
 		if (context.getPlayer() != null) {
-			if (context.getPlayer().isCrouching() && context.getFace().getOpposite() != Direction.UP) {
-				return super.getStateForPlacement(context).with(HORIZONTAL_FACING, context.getFace().getOpposite());
+			if (context.getPlayer().isCrouching() && context.getClickedFace().getOpposite() != Direction.UP) {
+				return super.getStateForPlacement(context).setValue(HORIZONTAL_FACING, context.getClickedFace().getOpposite());
 			}
 		}
-		return super.getStateForPlacement(context).with(HORIZONTAL_FACING, context.getPlacementHorizontalFacing().getOpposite());
+		return super.getStateForPlacement(context).setValue(HORIZONTAL_FACING, context.getHorizontalDirection().getOpposite());
 	}
 
-	protected void fillStateContainer(StateContainer.Builder<Block, BlockState> builder) {
+	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
 		builder.add(HORIZONTAL_FACING, WATERLOGGED, FULL_SIZE);
 	}
 
 	@Override
-	public VoxelShape getShape(BlockState state, IBlockReader worldIn, BlockPos pos, ISelectionContext context) {
-		if (state.get(FULL_SIZE)) {
+	public VoxelShape getShape(BlockState state, BlockGetter worldIn, BlockPos pos, CollisionContext context) {
+		if (state.getValue(FULL_SIZE)) {
 			return super.getShape(state, worldIn, pos, context);
 		} else {
-			switch (state.get(HORIZONTAL_FACING)) {
+			switch (state.getValue(HORIZONTAL_FACING)) {
 				case SOUTH:
 					return SHAPE_SOUTH;
 				case EAST:
@@ -106,59 +114,59 @@ public class AspectBookshelfBlock extends WaterloggableBlock{
 	}
 
 	@Override
-	public VoxelShape getCollisionShape(BlockState state, IBlockReader world, BlockPos pos, ISelectionContext context){
+	public VoxelShape getCollisionShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context){
 		return getShape(state, world, pos, context);
 	}
 
 	public BlockState rotate(BlockState state, Rotation rot){
-		return state.with(HORIZONTAL_FACING, rot.rotate(state.get(HORIZONTAL_FACING)));
+		return state.setValue(HORIZONTAL_FACING, rot.rotate(state.getValue(HORIZONTAL_FACING)));
 	}
 
 	public BlockState mirror(BlockState state, Mirror mirrorIn){
-		return state.rotate(mirrorIn.toRotation(state.get(HORIZONTAL_FACING)));
+		return state.rotate(mirrorIn.getRotation(state.getValue(HORIZONTAL_FACING)));
 	}
 
 	@Nullable @Override
-	public TileEntity createTileEntity(BlockState state, IBlockReader world) {
-		return new AspectBookshelfTileEntity(state.get(HORIZONTAL_FACING));
+	public BlockEntity newBlockEntity(BlockPos pos, BlockState state){
+		return new AspectBookshelfBlockEntity(state.getValue(HORIZONTAL_FACING), pos, state);
 	}
 
-	@Override
-	public boolean hasTileEntity(BlockState state) {
-		return true;
-	}
+//	@Override
+//	public boolean hasTileEntity(BlockState state) {
+//		return true;
+//	}
 
 	@Override
-	public ActionResultType onBlockActivated(BlockState state, World worldIn, BlockPos pos, PlayerEntity player, Hand handIn, BlockRayTraceResult p_225533_6_) {
-		TileEntity te = worldIn.getTileEntity(pos);
-		boolean vert = p_225533_6_.getFace() == Direction.UP || p_225533_6_.getFace() == Direction.DOWN;
-		if ((vert && p_225533_6_.getFace() == state.get(HORIZONTAL_FACING).getOpposite()) || (!vert && p_225533_6_.getFace() == state.get(HORIZONTAL_FACING))) {
+	public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult p_225533_6_) {
+		BlockEntity te = worldIn.getBlockEntity(pos);
+		boolean vert = p_225533_6_.getDirection() == Direction.UP || p_225533_6_.getDirection() == Direction.DOWN;
+		if ((vert && p_225533_6_.getDirection() == state.getValue(HORIZONTAL_FACING).getOpposite()) || (!vert && p_225533_6_.getDirection() == state.getValue(HORIZONTAL_FACING))) {
 			int widthSlot = -1;
 			int heightSlot = -1;
-			switch (state.get(HORIZONTAL_FACING)) {
+			switch (state.getValue(HORIZONTAL_FACING)) {
 				case NORTH:
-					widthSlot = 3 - (int) ((p_225533_6_.getHitVec().x - pos.getX()) / .33);
-					heightSlot = 3 - (int) ((p_225533_6_.getHitVec().y - pos.getY()) / .33);
+					widthSlot = 3 - (int) ((p_225533_6_.getLocation().x - pos.getX()) / .33);
+					heightSlot = 3 - (int) ((p_225533_6_.getLocation().y - pos.getY()) / .33);
 					break;
 				case SOUTH:
-					widthSlot = 1 + (int) ((p_225533_6_.getHitVec().x - pos.getX()) / .33);
-					heightSlot = 3 - (int) ((p_225533_6_.getHitVec().y - pos.getY()) / .33);
+					widthSlot = 1 + (int) ((p_225533_6_.getLocation().x - pos.getX()) / .33);
+					heightSlot = 3 - (int) ((p_225533_6_.getLocation().y - pos.getY()) / .33);
 					break;
 				case EAST:
-					widthSlot = 3 - (int) ((p_225533_6_.getHitVec().z - pos.getZ()) / .33);
-					heightSlot = 3 - (int) ((p_225533_6_.getHitVec().y - pos.getY()) / .33);
+					widthSlot = 3 - (int) ((p_225533_6_.getLocation().z - pos.getZ()) / .33);
+					heightSlot = 3 - (int) ((p_225533_6_.getLocation().y - pos.getY()) / .33);
 					break;
 				case WEST:
-					widthSlot = 1 + (int) ((p_225533_6_.getHitVec().z - pos.getZ()) / .33);
-					heightSlot = 3 - (int) ((p_225533_6_.getHitVec().y - pos.getY()) / .33);
+					widthSlot = 1 + (int) ((p_225533_6_.getLocation().z - pos.getZ()) / .33);
+					heightSlot = 3 - (int) ((p_225533_6_.getLocation().y - pos.getY()) / .33);
 					break;
 				case UP:
-					widthSlot = 3 - (int) ((p_225533_6_.getHitVec().x - pos.getX()) / .33);
-					heightSlot = 1 + (int) ((p_225533_6_.getHitVec().z - pos.getZ()) / .33);
+					widthSlot = 3 - (int) ((p_225533_6_.getLocation().x - pos.getX()) / .33);
+					heightSlot = 1 + (int) ((p_225533_6_.getLocation().z - pos.getZ()) / .33);
 					break;
 				case DOWN:
-					widthSlot = 3 - (int) ((p_225533_6_.getHitVec().x - pos.getX()) / .33);
-					heightSlot = 3 - (int) ((p_225533_6_.getHitVec().z - pos.getZ()) / .33);
+					widthSlot = 3 - (int) ((p_225533_6_.getLocation().x - pos.getX()) / .33);
+					heightSlot = 3 - (int) ((p_225533_6_.getLocation().z - pos.getZ()) / .33);
 					break;
 			}
 			if (heightSlot <= 0) {
@@ -173,42 +181,42 @@ public class AspectBookshelfBlock extends WaterloggableBlock{
 			}
 			int slot = (widthSlot + ((heightSlot - 1) * 3)) - 1;
 
-			if (te instanceof AspectBookshelfTileEntity) {
-				AspectBookshelfTileEntity abe = (AspectBookshelfTileEntity) te;
+			if (te instanceof AspectBookshelfBlockEntity) {
+				AspectBookshelfBlockEntity abe = (AspectBookshelfBlockEntity) te;
 				if (player.isCrouching()) {
-					player.openContainer(abe);
-				} else if (player.getHeldItem(handIn).getItem() instanceof PhialItem && abe.addPhial(player.getHeldItem(handIn), slot)) {
-					player.getHeldItem(handIn).shrink(1);
+					player.openMenu(abe);
+				} else if (player.getItemInHand(handIn).getItem() instanceof PhialItem && abe.addPhial(player.getItemInHand(handIn), slot)) {
+					player.getItemInHand(handIn).shrink(1);
 					playPhialshelfSlideSound(player);
 				} else {
 					ItemStack returned = abe.removePhial(slot);
 					if (returned != ItemStack.EMPTY) {
-						if (!player.addItemStackToInventory(returned)) {
+						if (!player.addItem(returned)) {
 							ItemEntity itementity = new ItemEntity(worldIn,
-									player.getPosX(),
-									player.getPosY(),
-									player.getPosZ(), returned);
-							itementity.setNoPickupDelay();
-							worldIn.addEntity(itementity);
+									player.getX(),
+									player.getY(),
+									player.getZ(), returned);
+							itementity.setNoPickUpDelay();
+							worldIn.addFreshEntity(itementity);
 							playPhialshelfSlideSound(player);
 						}
 					} else {
-						return ActionResultType.PASS;
+						return InteractionResult.PASS;
 					}
 				}
-				return ActionResultType.SUCCESS;
+				return InteractionResult.SUCCESS;
 			}
 		}
-		return ActionResultType.PASS;
+		return InteractionResult.PASS;
 	}
 
-	public boolean hasComparatorInputOverride(BlockState state){
+	public boolean hasAnalogOutputSignal(BlockState state){
 		return true;
 	}
 
-	public int getComparatorInputOverride(BlockState block, World world, BlockPos pos){
-		TileEntity te = world.getTileEntity(pos);
+	public int getAnalogOutputSignal(BlockState block, Level world, BlockPos pos){
+		BlockEntity te = world.getBlockEntity(pos);
 		assert te != null;
-		return ((AspectBookshelfTileEntity)te).getRedstoneOut();
+		return ((AspectBookshelfBlockEntity)te).getRedstoneOut();
 	}
 }

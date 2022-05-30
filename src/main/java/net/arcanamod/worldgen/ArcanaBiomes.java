@@ -1,21 +1,20 @@
 package net.arcanamod.worldgen;
 
-import net.minecraft.entity.EntityClassification;
-import net.minecraft.entity.EntityType;
-import net.minecraft.util.RegistryKey;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.world.biome.*;
-import net.minecraft.world.gen.feature.structure.StructureFeatures;
-import net.minecraft.world.gen.surfacebuilders.ConfiguredSurfaceBuilders;
+import net.minecraft.core.Registry;
+import net.minecraft.data.worldgen.BiomeDefaultFeatures;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.level.biome.*;
+import net.minecraft.world.level.levelgen.GenerationStep;
 import net.minecraftforge.common.BiomeDictionary;
 import net.minecraftforge.common.BiomeManager;
-import net.minecraftforge.fml.RegistryObject;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegistryObject;
 
 import static net.arcanamod.Arcana.MODID;
-import static net.minecraft.world.biome.DefaultBiomeFeatures.*;
 
 public class ArcanaBiomes{
 	
@@ -24,63 +23,60 @@ public class ArcanaBiomes{
 	public static final RegistryObject<Biome> MAGICAL_FOREST = BIOMES.register("magical_forest", ArcanaBiomes::makeMagicalForestBiome);
 	
 	private static Biome makeMagicalForestBiome(){
-		BiomeGenerationSettings.Builder settings = (new BiomeGenerationSettings.Builder()).withSurfaceBuilder(ConfiguredSurfaceBuilders.GRASS);
-		withStrongholdAndMineshaft(settings);
-		settings.withStructure(StructureFeatures.RUINED_PORTAL);
-		withCavesAndCanyons(settings);
-		withLavaAndWaterLakes(settings);
-		withMonsterRoom(settings);
-		withAllForestFlowerGeneration(settings);
-		withCommonOverworldBlocks(settings);
-		withOverworldOres(settings);
-		withDisks(settings);
-		withForestBirchTrees(settings);
-		withDefaultFlowers(settings);
-		withForestGrass(settings);
-		withNormalMushroomGeneration(settings);
-		withSugarCaneAndPumpkins(settings);
-		withLavaAndWaterSprings(settings);
-		withFrozenTopLayer(settings);
-		
-		MobSpawnInfo.Builder mobSpawnBuilder = getStandardMobSpawnBuilder()
-				.withSpawner(EntityClassification.CREATURE, new MobSpawnInfo.Spawners(EntityType.WOLF, 5, 4, 4))
-				.isValidSpawnBiomeForPlayer();
-		
-		Biome biome = (new Biome.Builder())
-				.precipitation(Biome.RainType.RAIN)
-				.category(Biome.Category.FOREST)
-				.depth(.2f)
-				.scale(.3f)
+		BiomeGenerationSettings.Builder biomegenerationsettings$builder = new BiomeGenerationSettings.Builder();
+		BiomeDefaultFeatures.addDefaultCarversAndLakes(biomegenerationsettings$builder);
+		BiomeDefaultFeatures.addDefaultCrystalFormations(biomegenerationsettings$builder);
+		BiomeDefaultFeatures.addDefaultMonsterRoom(biomegenerationsettings$builder);
+		BiomeDefaultFeatures.addDefaultUndergroundVariety(biomegenerationsettings$builder);
+		BiomeDefaultFeatures.addDefaultSprings(biomegenerationsettings$builder);
+		BiomeDefaultFeatures.addSurfaceFreezing(biomegenerationsettings$builder);
+		BiomeDefaultFeatures.addForestFlowers(biomegenerationsettings$builder);
+		BiomeDefaultFeatures.addDefaultOres(biomegenerationsettings$builder);
+		BiomeDefaultFeatures.addDefaultSoftDisks(biomegenerationsettings$builder);
+		BiomeDefaultFeatures.addDefaultFlowers(biomegenerationsettings$builder);
+		BiomeDefaultFeatures.addForestGrass(biomegenerationsettings$builder);
+		BiomeDefaultFeatures.addDefaultMushrooms(biomegenerationsettings$builder);
+		BiomeDefaultFeatures.addDefaultExtraVegetation(biomegenerationsettings$builder);
+		BiomeDefaultFeatures.addOtherBirchTrees(biomegenerationsettings$builder);
+
+		biomegenerationsettings$builder.addFeature(GenerationStep.Decoration.VEGETAL_DECORATION, ArcanaFeatures.GREATWOOD_PLACED);
+
+		// withAllForestFlowerGeneration(settings);
+		// withFrozenTopLayer(settings);
+
+		MobSpawnSettings.Builder mobspawnsettings$builder = new MobSpawnSettings.Builder();
+		BiomeDefaultFeatures.farmAnimals(mobspawnsettings$builder);
+		BiomeDefaultFeatures.commonSpawns(mobspawnsettings$builder);
+		mobspawnsettings$builder.addSpawn(MobCategory.CREATURE, new MobSpawnSettings.SpawnerData(EntityType.WOLF, 5, 4, 4));
+		//.isValidSpawnBiomeForPlayer();
+
+		Biome biome = (new Biome.BiomeBuilder())
+				.precipitation(Biome.Precipitation.RAIN)
+				.biomeCategory(Biome.BiomeCategory.FOREST)
 				.temperature(.6f)
 				.downfall(.9f)
-				.setEffects((new BiomeAmbience.Builder())
-						.withGrassColor(0x7ff3ac)
-						.setWaterColor(0x3f76e4)
-						.setWaterFogColor(0x50533)
-						.setFogColor(0xc0d8ff)
-						.withSkyColor(getSkyColorWithTemperatureModifier(.7f))
-						.setMoodSound(MoodSoundAmbience.DEFAULT_CAVE).build())
-				.withMobSpawnSettings(mobSpawnBuilder.build())
-				.withGenerationSettings(settings.build())
+				.specialEffects((new BiomeSpecialEffects.Builder())
+						.grassColorOverride(0x7ff3ac)
+						.waterColor(0x3f76e4)
+						.waterFogColor(0x50533)
+						.fogColor(0xc0d8ff)
+						.skyColor(getSkyColorWithTemperatureModifier(.7f))
+						.ambientMoodSound(AmbientMoodSettings.LEGACY_CAVE_SETTINGS)
+						.build())
+				.mobSpawnSettings(mobspawnsettings$builder.build())
+				.generationSettings(biomegenerationsettings$builder.build())
 				.build();
 		
-		RegistryKey<Biome> key = RegistryKey.getOrCreateKey(Registry.BIOME_KEY, MAGICAL_FOREST.getId());
+		ResourceKey<Biome> key = ResourceKey.create(Registry.BIOME_REGISTRY, MAGICAL_FOREST.getId());
 		BiomeManager.addBiome(BiomeManager.BiomeType.COOL, new BiomeManager.BiomeEntry(key, 5));
 		BiomeDictionary.addTypes(key, BiomeDictionary.Type.FOREST, BiomeDictionary.Type.OVERWORLD, BiomeDictionary.Type.MAGICAL);
 		
 		return biome;
 	}
-	
+
 	private static int getSkyColorWithTemperatureModifier(float temperature) {
 		float temp = temperature / 3;
-		temp = MathHelper.clamp(temp, -1, 1);
-		return MathHelper.hsvToRGB(0.62222224F - temp * .05f, .5f + temp * .1f, 1);
-	}
-	
-	private static MobSpawnInfo.Builder getStandardMobSpawnBuilder() {
-		MobSpawnInfo.Builder mobspawninfo$builder = new MobSpawnInfo.Builder();
-		DefaultBiomeFeatures.withPassiveMobs(mobspawninfo$builder);
-		DefaultBiomeFeatures.withBatsAndHostiles(mobspawninfo$builder);
-		return mobspawninfo$builder;
+		temp = Mth.clamp(temp, -1, 1);
+		return Mth.hsvToRgb(0.62222224F - temp * .05f, .5f + temp * .1f, 1);
 	}
 }

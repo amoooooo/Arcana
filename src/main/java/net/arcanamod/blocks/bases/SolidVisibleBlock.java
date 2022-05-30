@@ -1,10 +1,11 @@
 package net.arcanamod.blocks.bases;
 
-import net.minecraft.block.BreakableBlock;
+import net.minecraft.world.level.block.AbstractGlassBlock;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 
-public class SolidVisibleBlock extends BreakableBlock{
+public class SolidVisibleBlock extends AbstractGlassBlock {
 	
-	public SolidVisibleBlock(Properties properties){
+	public SolidVisibleBlock(BlockBehaviour.Properties properties){
 		super(properties);
 	}
 }

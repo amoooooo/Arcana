@@ -1,16 +1,15 @@
 package net.arcanamod.network;
 
 import net.arcanamod.Arcana;
-import net.arcanamod.world.Node;
 import net.arcanamod.capabilities.AuraChunk;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.INBT;
-import net.minecraft.nbt.ListNBT;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraftforge.common.util.Constants;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.arcanamod.world.Node;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraftforge.network.NetworkEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -30,23 +29,23 @@ public class PkSyncChunkNodes{
 		this.nodes = nodes;
 	}
 	
-	public static void encode(PkSyncChunkNodes msg, PacketBuffer buffer){
-		CompoundNBT compound = new CompoundNBT();
-		ListNBT data = new ListNBT();
+	public static void encode(PkSyncChunkNodes msg, FriendlyByteBuf buffer){
+		CompoundTag compound = new CompoundTag();
+		ListTag data = new ListTag();
 		for(Node node : msg.nodes)
 			data.add(node.serializeNBT());
 		compound.put("nodes", data);
-		buffer.writeCompoundTag(compound);
+		buffer.writeNbt(compound);
 		buffer.writeInt(msg.chunk.x);
 		buffer.writeInt(msg.chunk.z);
 	}
 	
-	public static PkSyncChunkNodes decode(PacketBuffer buffer){
-		ListNBT list = buffer.readCompoundTag().getList("nodes", Constants.NBT.TAG_COMPOUND);
+	public static PkSyncChunkNodes decode(FriendlyByteBuf buffer){
+		ListTag list = buffer.readNbt().getList("nodes", Tag.TAG_COMPOUND);
 		Collection<Node> nodeSet = new ArrayList<>(list.size());
-		for(INBT nodeNBT : list)
-			if(nodeNBT instanceof CompoundNBT)
-				nodeSet.add(Node.fromNBT((CompoundNBT)nodeNBT));
+		for(Tag nodeTag : list)
+			if(nodeTag instanceof CompoundTag)
+				nodeSet.add(Node.fromTag((CompoundTag)nodeTag));
 		int x = buffer.readInt();
 		int z = buffer.readInt();
 		return new PkSyncChunkNodes(new ChunkPos(x, z), nodeSet);
@@ -55,7 +54,7 @@ public class PkSyncChunkNodes{
 	public static void handle(PkSyncChunkNodes msg, Supplier<NetworkEvent.Context> supplier){
 		supplier.get().enqueueWork(() -> {
 			// I'm on client
-			Chunk chunk = Arcana.proxy.getWorldOnClient().getChunk(msg.chunk.x, msg.chunk.z);
+			ChunkAccess chunk = Arcana.proxy.getWorldOnClient().getChunk(msg.chunk.x, msg.chunk.z);
 			AuraChunk nc = AuraChunk.getFrom(chunk);
 			if(nc != null)
 				nc.setNodes(new ArrayList<>(msg.nodes));

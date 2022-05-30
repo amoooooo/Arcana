@@ -1,27 +1,27 @@
 package net.arcanamod.blocks;
 
-import mcp.MethodsReturnNonnullByDefault;
 import net.arcanamod.ArcanaConfig;
 import net.arcanamod.aspects.handlers.AspectHolder;
-import net.arcanamod.blocks.tiles.AlembicTileEntity;
+import net.arcanamod.blocks.tiles.AlembicBlockEntity;
 import net.arcanamod.world.AuraView;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.inventory.container.INamedContainerProvider;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.BlockRayTraceResult;
-import net.minecraft.util.math.shapes.ISelectionContext;
-import net.minecraft.util.math.shapes.VoxelShape;
-import net.minecraft.util.math.shapes.VoxelShapes;
-import net.minecraft.world.IBlockReader;
-import net.minecraft.world.World;
-import net.minecraftforge.common.util.Constants;
-import net.minecraftforge.fml.network.NetworkHooks;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraftforge.network.NetworkHooks;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -29,67 +29,67 @@ import javax.annotation.ParametersAreNonnullByDefault;
 @SuppressWarnings("deprecation")
 @ParametersAreNonnullByDefault
 @MethodsReturnNonnullByDefault
-public class AlembicBlock extends Block{
+public class AlembicBlock extends Block implements EntityBlock {
 	
-	protected static final VoxelShape SHAPE = VoxelShapes.or(
-			makeCuboidShape(1, 1, 1, 15, 15, 15),
-			makeCuboidShape(0, 2, 0, 16, 4, 16),
-			makeCuboidShape(0, 12, 0, 16, 14, 16),
-			makeCuboidShape(4, 0, 4, 12, 2, 12),
-			makeCuboidShape(4, 14, 4, 12, 16, 12)
-	).simplify();
+	protected static final VoxelShape SHAPE = Shapes.or(
+			box(1, 1, 1, 15, 15, 15),
+			box(0, 2, 0, 16, 4, 16),
+			box(0, 12, 0, 16, 14, 16),
+			box(4, 0, 4, 12, 2, 12),
+			box(4, 14, 4, 12, 16, 12)
+	).optimize();
 	
 	public AlembicBlock(Properties properties){
 		super(properties);
 	}
 	
-	public VoxelShape getShape(BlockState state, IBlockReader worldIn, BlockPos pos, ISelectionContext context){
+	public VoxelShape getShape(BlockState state, BlockGetter worldIn, BlockPos pos, CollisionContext context){
 		return SHAPE;
 	}
 	
-	@Override
-	public boolean hasTileEntity(BlockState state){
-		return true;
-	}
+//	@Override
+//	public boolean hasBlockEntity(BlockState state){
+//		return true;
+//	}
 	
 	@Nullable
 	@Override
-	public TileEntity createTileEntity(BlockState state, IBlockReader world){
-		return new AlembicTileEntity();
+	public BlockEntity newBlockEntity(BlockPos pos, BlockState state){
+		return new AlembicBlockEntity(pos, state);
 	}
 	
-	public void neighborChanged(BlockState state, World world, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving){
+	public void neighborChanged(BlockState state, Level world, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving){
 		super.neighborChanged(state, world, pos, block, fromPos, isMoving);
-		if(!world.isRemote()){
-			TileEntity te = world.getTileEntity(pos);
-			if(te instanceof AlembicTileEntity){
-				AlembicTileEntity alembic = (AlembicTileEntity)te;
-				alembic.suppressedByRedstone = world.isBlockPowered(pos);
-				alembic.markDirty();
-				world.notifyBlockUpdate(pos, state, state, Constants.BlockFlags.BLOCK_UPDATE);
+		if(!world.isClientSide()){
+			BlockEntity te = world.getBlockEntity(pos);
+			if(te instanceof AlembicBlockEntity){
+				AlembicBlockEntity alembic = (AlembicBlockEntity) te;
+				alembic.suppressedByRedstone = world.hasNeighborSignal(pos);
+				alembic.setChanged();
+				world.sendBlockUpdated(pos, state, state, 4);
 			}
 		}
 	}
 	
-	public ActionResultType onBlockActivated(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockRayTraceResult hit){
-		TileEntity te = world.getTileEntity(pos);
-		if(te instanceof AlembicTileEntity)
-			if(player.getHeldItem(hand).isEmpty() && player.isCrouching()){
-				AlembicTileEntity alembic = (AlembicTileEntity)te;
+	public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit){
+		BlockEntity te = world.getBlockEntity(pos);
+		if(te instanceof AlembicBlockEntity)
+			if(player.getItemInHand(hand).isEmpty() && player.isCrouching()){
+				AlembicBlockEntity alembic = (AlembicBlockEntity) te;
 				// get rid of the content of the alembic
-				for(AspectHolder holder : ((AlembicTileEntity)te).aspects.getHolders()){
+				for(AspectHolder holder : ((AlembicBlockEntity)te).aspects.getHolders()){
 					AuraView.getSided(world).addFluxAt(pos, (float)(holder.getStack().getAmount() * ArcanaConfig.ASPECT_DUMPING_WASTE.get()));
 					holder.drain(holder.getStack().getAmount(), false);
 					// TODO: flux particles
 				}
-				alembic.markDirty();
-				world.notifyBlockUpdate(pos, state, state, Constants.BlockFlags.BLOCK_UPDATE);
+				alembic.setChanged();
+				world.sendBlockUpdated(pos, state, state, 4);
 			}else{
-				if(world.isRemote())
-					return ActionResultType.SUCCESS;
-				NetworkHooks.openGui((ServerPlayerEntity)player, (INamedContainerProvider)te, buffer -> buffer.writeBlockPos(pos));
-				return ActionResultType.SUCCESS;
+				if(world.isClientSide())
+					return InteractionResult.SUCCESS;
+				NetworkHooks.openGui((ServerPlayer)player, (MenuProvider) te, buffer -> buffer.writeBlockPos(pos));
+				return InteractionResult.SUCCESS;
 			}
-		return super.onBlockActivated(state, world, pos, player, hand, hit);
+		return super.use(state, world, pos, player, hand, hit);
 	}
 }

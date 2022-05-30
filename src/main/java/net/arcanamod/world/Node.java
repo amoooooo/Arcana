@@ -1,17 +1,17 @@
 package net.arcanamod.world;
 
+import com.mojang.math.Vector3d;
 import net.arcanamod.aspects.handlers.AspectBattery;
 import net.arcanamod.aspects.handlers.AspectHandler;
-import net.minecraft.dispenser.IPosition;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.core.Position;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 
 import java.util.UUID;
 
 // implements position for BlockPos constructor convenience
-public class Node implements IPosition{
+public class Node implements Position {
 	
 	/** The aspects contained in the node. */
 	AspectHandler aspects;
@@ -20,11 +20,11 @@ public class Node implements IPosition{
 	/** The position of this node. */
 	double x, y, z;
 	/** The unique ID of this node. */
-	UUID nodeUniqueId = MathHelper.getRandomUUID();
+	UUID nodeUniqueId = Mth.createInsecureUUID();
 	/** The time, in ticks, until the node gains some aspects. */
 	int timeUntilRecharge;
 	/** Any extra data, used by the node type (e.g. hungry nodes). */
-	CompoundNBT data = new CompoundNBT();
+	CompoundTag data = new CompoundTag();
 	
 	public Node(AspectHandler aspects, NodeType type, double x, double y, double z, int timeUntilRecharge){
 		this.aspects = aspects;
@@ -35,7 +35,7 @@ public class Node implements IPosition{
 		this.timeUntilRecharge = timeUntilRecharge;
 	}
 	
-	public Node(AspectHandler aspects, NodeType type, double x, double y, double z, int timeUntilRecharge, CompoundNBT data){
+	public Node(AspectHandler aspects, NodeType type, double x, double y, double z, int timeUntilRecharge, CompoundTag data){
 		this.aspects = aspects;
 		this.type = type;
 		this.x = x;
@@ -45,7 +45,7 @@ public class Node implements IPosition{
 		this.data = data;
 	}
 	
-	public Node(AspectHandler aspects, NodeType type, double x, double y, double z, int timeUntilRecharge, UUID nodeUniqueId, CompoundNBT data){
+	public Node(AspectHandler aspects, NodeType type, double x, double y, double z, int timeUntilRecharge, UUID nodeUniqueId, CompoundTag data){
 		this.aspects = aspects;
 		this.type = type;
 		this.x = x;
@@ -60,27 +60,27 @@ public class Node implements IPosition{
 		return type;
 	}
 	
-	public CompoundNBT serializeNBT(){
-		CompoundNBT nbt = new CompoundNBT();
-		nbt.putString("type", NodeType.TYPES.inverse().get(type()).toString());
-		nbt.put("aspects", aspects.serializeNBT());
-		nbt.putDouble("x", getX());
-		nbt.putDouble("y", getY());
-		nbt.putDouble("z", getZ());
-		nbt.putUniqueId("nodeUniqueId", nodeUniqueId);
-		nbt.putInt("timeUntilRecharge", timeUntilRecharge);
-		nbt.put("data", data);
-		return nbt;
+	public CompoundTag serializeNBT(){
+		CompoundTag Tag = new CompoundTag();
+		Tag.putString("type", NodeType.TYPES.inverse().get(type()).toString());
+		Tag.put("aspects", aspects.serializeNBT());
+		Tag.putDouble("x", x());
+		Tag.putDouble("y", y());
+		Tag.putDouble("z", z());
+		Tag.putUUID("nodeUniqueId", nodeUniqueId);
+		Tag.putInt("timeUntilRecharge", timeUntilRecharge);
+		Tag.put("data", data);
+		return Tag;
 	}
 	
-	public static Node fromNBT(CompoundNBT nbt){
+	public static Node fromTag(CompoundTag Tag){
 		AspectHandler aspects = new AspectBattery();
-		aspects.deserializeNBT(nbt.getCompound("aspects"));
-		NodeType type = NodeType.TYPES.get(new ResourceLocation(nbt.getString("type")));
-		double x = nbt.getDouble("x"), y = nbt.getDouble("y"), z = nbt.getDouble("z");
-		int timeUntilRecharge = nbt.getInt("timeUntilRecharge");
-		CompoundNBT data = nbt.getCompound("data");
-		return nbt.hasUniqueId("nodeUniqueId") ? new Node(aspects, type, x, y, z, timeUntilRecharge, nbt.getUniqueId("nodeUniqueId"), data) : new Node(aspects, type, x, y, z, timeUntilRecharge, data);
+		aspects.deserializeNBT(Tag.getCompound("aspects"));
+		NodeType type = NodeType.TYPES.get(new ResourceLocation(Tag.getString("type")));
+		double x = Tag.getDouble("x"), y = Tag.getDouble("y"), z = Tag.getDouble("z");
+		int timeUntilRecharge = Tag.getInt("timeUntilRecharge");
+		CompoundTag data = Tag.getCompound("data");
+		return Tag.hasUUID("nodeUniqueId") ? new Node(aspects, type, x, y, z, timeUntilRecharge, Tag.getUUID("nodeUniqueId"), data) : new Node(aspects, type, x, y, z, timeUntilRecharge, data);
 	}
 	
 	public Vector3d getPosition(){
@@ -91,15 +91,15 @@ public class Node implements IPosition{
 		return aspects;
 	}
 	
-	public double getX(){
+	public double x(){
 		return x;
 	}
 	
-	public double getY(){
+	public double y(){
 		return y;
 	}
 	
-	public double getZ(){
+	public double z(){
 		return z;
 	}
 	
@@ -131,7 +131,7 @@ public class Node implements IPosition{
 		return nodeUniqueId;
 	}
 	
-	public CompoundNBT getData(){
+	public CompoundTag getData(){
 		return data;
 	}
 	

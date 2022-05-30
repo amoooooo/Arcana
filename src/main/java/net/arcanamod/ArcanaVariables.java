@@ -1,6 +1,6 @@
 package net.arcanamod;
 
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 
 public class ArcanaVariables {
     public static ResourceLocation arcLoc(String path){

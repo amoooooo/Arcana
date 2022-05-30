@@ -13,15 +13,22 @@ import net.arcanamod.systems.research.ResearchBooks;
 import net.arcanamod.systems.taint.Taint;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Position;
 import net.minecraft.dispenser.IPosition;
 import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.server.level.ChunkHolder;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.server.ChunkHolder;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.fml.network.PacketDistributor;
+import net.minecraftforge.network.PacketDistributor;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -33,16 +40,16 @@ import static com.google.common.collect.Streams.stream;
  */
 public class ServerAuraView implements AuraView{
 	
-	ServerWorld world;
+	ServerLevel world;
 	
-	public ServerAuraView(ServerWorld world){
+	public ServerAuraView(ServerLevel world){
 		this.world = world;
 	}
 	
 	public Collection<Node> getAllNodes(){
 		Collection<Node> allNodes = new ArrayList<>();
-		for(ChunkHolder holder : world.getChunkProvider().chunkManager.getLoadedChunksIterable()){
-			Chunk chunk = holder.getChunkIfComplete();
+		for(ChunkHolder holder : world.getChunkSource().chunkMap.getChunks()){
+			ChunkAccess chunk = holder.getChunkIfComplete();
 			if(chunk != null){
 				AuraChunk nc = AuraChunk.getFrom(chunk);
 				if(nc != null)
@@ -53,7 +60,7 @@ public class ServerAuraView implements AuraView{
 	}
 	
 	// TODO: sendNodeToClients so we send less redundant data
-	public void sendChunkToClients(IPosition pos){
+	public void sendChunkToClients(Position pos){
 		sendChunkToClients(new BlockPos(pos));
 	}
 	

@@ -1,16 +1,16 @@
 package net.arcanamod.items.armor;
 
 import net.arcanamod.items.settings.GogglePriority;
-import net.minecraft.inventory.EquipmentSlotType;
-import net.minecraft.item.ArmorItem;
-import net.minecraft.item.IArmorMaterial;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.ArmorMaterial;
 
-public class GogglesItem extends ArmorItem{
+public class GogglesItem extends ArmorItem {
 	
 	public GogglePriority priority;
 	
-	public GogglesItem(IArmorMaterial material, Properties properties, GogglePriority priority){
-		super(material, EquipmentSlotType.HEAD, properties);
+	public GogglesItem(ArmorMaterial material, Properties properties, GogglePriority priority){
+		super(material, EquipmentSlot.HEAD, properties);
 		this.priority = priority;
 	}
 }

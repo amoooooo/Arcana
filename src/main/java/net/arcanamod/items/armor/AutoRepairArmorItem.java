@@ -1,19 +1,21 @@
 package net.arcanamod.items.armor;
 
-import mcp.MethodsReturnNonnullByDefault;
 import net.arcanamod.items.AutoRepair;
-import net.minecraft.entity.Entity;
-import net.minecraft.inventory.EquipmentSlotType;
-import net.minecraft.item.*;
-import net.minecraft.world.World;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.ArmorItem;
+import net.minecraft.world.item.ArmorMaterial;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
 @ParametersAreNonnullByDefault
 @MethodsReturnNonnullByDefault
-public class AutoRepairArmorItem extends ArmorItem{
+public class AutoRepairArmorItem extends ArmorItem {
 	
-	public AutoRepairArmorItem(IArmorMaterial materialIn, EquipmentSlotType slot, Properties builder){
+	public AutoRepairArmorItem(ArmorMaterial materialIn, EquipmentSlot slot, Properties builder){
 		super(materialIn, slot, builder);
 	}
 	
@@ -25,7 +27,7 @@ public class AutoRepairArmorItem extends ArmorItem{
 		return AutoRepair.shouldCauseBlockBreakReset(oldStack, newStack);
 	}
 	
-	public void inventoryTick(ItemStack stack, World world, Entity entity, int itemSlot, boolean isSelected){
+	public void inventoryTick(ItemStack stack, Level world, Entity entity, int itemSlot, boolean isSelected){
 		super.inventoryTick(stack, world, entity, itemSlot, isSelected);
 		AutoRepair.inventoryTick(stack, world, entity, itemSlot, isSelected);
 	}

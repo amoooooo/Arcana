@@ -1,17 +1,18 @@
 package net.arcanamod.blocks;
 
-import net.arcanamod.blocks.tiles.VacuumTileEntity;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockRenderType;
-import net.minecraft.block.BlockState;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.world.IBlockReader;
+import net.arcanamod.blocks.tiles.VacuumBlockEntity;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 @SuppressWarnings({"deprecation"})
-public class VacuumBlock extends Block{
+public class VacuumBlock extends Block implements EntityBlock {
  
 	public VacuumBlock(Properties properties){
 		super(properties);
@@ -19,18 +20,18 @@ public class VacuumBlock extends Block{
 	
 	@Nonnull
     @Override
-	public BlockRenderType getRenderType(@Nonnull BlockState state){
-		return BlockRenderType.INVISIBLE;
+	public RenderShape getRenderShape(@Nonnull BlockState state){
+		return RenderShape.INVISIBLE;
 	}
 	
 	@Nullable
 	@Override
-	public TileEntity createTileEntity(BlockState state, IBlockReader world){
-		return new VacuumTileEntity();
+	public BlockEntity newBlockEntity(BlockPos pos, BlockState state){
+		return new VacuumBlockEntity(pos, state);
 	}
 	
-	@Override
-	public boolean hasTileEntity(BlockState state){
-		return true;
-	}
+//	@Override
+//	public boolean hasTileEntity(BlockState state){
+//		return true;
+//	}
 }

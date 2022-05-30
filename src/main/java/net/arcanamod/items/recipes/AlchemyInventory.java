@@ -1,30 +1,30 @@
 package net.arcanamod.items.recipes;
 
-import mcp.MethodsReturnNonnullByDefault;
 import net.arcanamod.aspects.Aspect;
 import net.arcanamod.aspects.AspectStack;
-import net.arcanamod.blocks.tiles.CrucibleTileEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.IInventory;
-import net.minecraft.item.ItemStack;
+import net.arcanamod.blocks.tiles.CrucibleBlockEntity;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.world.Container;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Map;
 
 @MethodsReturnNonnullByDefault
 @ParametersAreNonnullByDefault
-public class AlchemyInventory implements IInventory{
+public class AlchemyInventory implements Container {
 	
 	ItemStack stack = ItemStack.EMPTY;
-	CrucibleTileEntity crucible;
-	PlayerEntity crafter;
+	CrucibleBlockEntity crucible;
+	Player crafter;
 	
-	public AlchemyInventory(CrucibleTileEntity crucible, PlayerEntity crafter){
+	public AlchemyInventory(CrucibleBlockEntity crucible, Player crafter) {
 		this.crucible = crucible;
 		this.crafter = crafter;
 	}
 	
-	public int getSizeInventory(){
+	public int getContainerSize(){
 		return 1;
 	}
 	
@@ -32,15 +32,15 @@ public class AlchemyInventory implements IInventory{
 		return stack.isEmpty() && crucible.getAspectStackMap().isEmpty();
 	}
 	
-	public ItemStack getStackInSlot(int index){
+	public ItemStack getItem(int index){
 		return index == 0 ? stack : ItemStack.EMPTY;
 	}
 	
-	public ItemStack decrStackSize(int index, int count){
+	public ItemStack removeItem(int index, int count){
 		return index == 0 ? stack.split(count) : ItemStack.EMPTY;
 	}
 	
-	public ItemStack removeStackFromSlot(int index){
+	public ItemStack removeItemNoUpdate(int index){
 		ItemStack result = ItemStack.EMPTY;
 		if(index == 0){
 			result = stack;
@@ -49,16 +49,16 @@ public class AlchemyInventory implements IInventory{
 		return result;
 	}
 	
-	public void setInventorySlotContents(int index, ItemStack stack){
+	public void setItem(int index, ItemStack stack){
 		if(index == 0)
 			this.stack = stack;
 	}
 	
-	public void markDirty(){
-		crucible.markDirty();
+	public void setChanged(){
+		crucible.setChanged();
 	}
 	
-	public boolean isUsableByPlayer(PlayerEntity player){
+	public boolean stillValid(Player player){
 		return true;
 	}
 	
@@ -66,11 +66,11 @@ public class AlchemyInventory implements IInventory{
 		return crucible.getAspectStackMap();
 	}
 	
-	public PlayerEntity getCrafter(){
+	public Player getCrafter(){
 		return crafter;
 	}
 	
-	public void clear(){
+	public void clearContent(){
 		stack = ItemStack.EMPTY;
 		// eww
 		crucible.getAspectStackMap().clear();

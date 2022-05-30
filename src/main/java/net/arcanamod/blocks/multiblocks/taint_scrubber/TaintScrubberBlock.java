@@ -3,28 +3,28 @@ package net.arcanamod.blocks.multiblocks.taint_scrubber;
 import net.arcanamod.aspects.VisShareable;
 import net.arcanamod.aspects.handlers.AspectBattery;
 import net.arcanamod.aspects.handlers.AspectHandler;
-import net.arcanamod.blocks.tiles.TaintScrubberTileEntity;
+import net.arcanamod.blocks.tiles.TaintScrubberBlockEntity;
 import net.arcanamod.systems.taint.Taint;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.item.BlockItemUseContext;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.particles.BlockParticleData;
-import net.minecraft.particles.ParticleTypes;
-import net.minecraft.state.BooleanProperty;
-import net.minecraft.state.StateContainer;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.IBlockReader;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.BlockParticleOption;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static net.arcanamod.blocks.DelegatingBlock.switchBlock;
 
-public class TaintScrubberBlock extends Block implements ITaintScrubberExtension{
+public class TaintScrubberBlock extends Block implements ITaintScrubberExtension, EntityBlock {
 	
 	public static final BooleanProperty SUPPORTED = BooleanProperty.create("supported"); // false by default
 	
@@ -34,35 +34,35 @@ public class TaintScrubberBlock extends Block implements ITaintScrubberExtension
 	
 	@Nullable
 	@Override
-	public TileEntity createTileEntity(BlockState state, IBlockReader world){
-		return new TaintScrubberTileEntity();
+	public BlockEntity newBlockEntity(BlockPos pos, BlockState state){
+		return new TaintScrubberBlockEntity(pos, state);
 	}
+
+//	@Override
+//	public boolean hasTileEntity(BlockState state){
+//		return true;
+//	}
 	
-	@Override
-	public boolean hasTileEntity(BlockState state){
-		return true;
-	}
-	
-	public BlockState getStateForPlacement(@Nonnull BlockItemUseContext context){
+	public BlockState getStateForPlacement(@Nonnull BlockPlaceContext context){
 		BlockState state = super.getStateForPlacement(context);
-		return state != null ? state.with(SUPPORTED, false) : null;
+		return state != null ? state.setValue(SUPPORTED, false) : null;
 	}
 	
-	protected void fillStateContainer(@Nonnull StateContainer.Builder<Block, BlockState> builder){
-		super.fillStateContainer(builder);
+	protected void createBlockStateDefinition(@Nonnull StateDefinition.Builder<Block, BlockState> builder){
+		super.createBlockStateDefinition(builder);
 		builder.add(SUPPORTED);
 	}
 	
 	@Override
-	public boolean isValidConnection(World world, BlockPos pos){
+	public boolean isValidConnection(Level world, BlockPos pos){
 		return true;
 	}
 	
 	@Override
-	public void sendUpdate(World world, BlockPos pos){}
+	public void sendUpdate(Level world, BlockPos pos){}
 	
 	@Override
-	public void run(World world, BlockPos pos, CompoundNBT compound){
+	public void run(Level world, BlockPos pos, CompoundTag compound){
 		// TODO: don't use NBT for this, just have methods for getting range and speed from extensions directly
 		// pick the highest range, and add speeds.
 		int rh = compound.getInt("h_range");
@@ -77,16 +77,16 @@ public class TaintScrubberBlock extends Block implements ITaintScrubberExtension
 			while(dead == null && iter < 8){
 				// TODO: don't try to pick blocks below or above the height limit, for the Bore's sake.
 				// TODO: separate up/down ranges would also be useful, also for the bore, so its not terrible on the surface.
-				taintingPos = pos.north(RANDOM.nextInt(rh + 1) - (rh / 2)).west(RANDOM.nextInt(rh + 1) - (rh / 2)).up(RANDOM.nextInt(rv + 1) - (rv / 2));
+				taintingPos = pos.north(RANDOM.nextInt(rh + 1) - (rh / 2)).west(RANDOM.nextInt(rh + 1) - (rh / 2)).above(RANDOM.nextInt(rv + 1) - (rv / 2));
 				dead = world.getBlockState(taintingPos).getBlock();
-				if(dead.isAir(world.getBlockState(taintingPos), world, taintingPos)){
+				if(dead.defaultBlockState().isAir()){
 					dead = null;
 					break;
 				}
 				// Drain open/unsealed jars
 				// TODO: replace with essentia input.
-				if(dead.hasTileEntity(world.getBlockState(taintingPos))){
-					TileEntity te = world.getTileEntity(taintingPos);
+				if(dead instanceof EntityBlock){
+					BlockEntity te = world.getBlockEntity(taintingPos);
 					if(te instanceof VisShareable){
 						VisShareable shareable = ((VisShareable)te);
 						if(shareable.isVisShareable() && !shareable.isSecure()){
@@ -106,14 +106,14 @@ public class TaintScrubberBlock extends Block implements ITaintScrubberExtension
 				iter++;
 			}
 			// Replace it with its dead form if found.
-			if(dead != null && !world.isRemote()){
+			if(dead != null && !world.isClientSide()){
 				BlockState deadState = switchBlock(world.getBlockState(taintingPos), dead);
-				world.setBlockState(taintingPos, deadState);
-				if(dead.isAir(world.getBlockState(taintingPos), world, taintingPos)){
+				world.setBlockAndUpdate(taintingPos, deadState);
+				if(dead.defaultBlockState().isAir()){
 					int rnd = RANDOM.nextInt(9) + 4;
 					for(int j = 0; j < rnd; j++){
 						world.addParticle(
-								new BlockParticleData(ParticleTypes.FALLING_DUST, Blocks.BLACK_CONCRETE_POWDER.getDefaultState()),
+								new BlockParticleOption(ParticleTypes.FALLING_DUST, Blocks.BLACK_CONCRETE_POWDER.defaultBlockState()),
 								taintingPos.getX() + 0.5f + ((RANDOM.nextInt(9) - 4) / 10f), taintingPos.getY() + 0.5f + ((RANDOM.nextInt(9) - 4) / 10f), taintingPos.getZ() + 0.5f + ((RANDOM.nextInt(9) - 4) / 10f),
 								0.1f, 0.1f, 0.1f
 						); // Ash Particle if block is destroyed
@@ -124,7 +124,7 @@ public class TaintScrubberBlock extends Block implements ITaintScrubberExtension
 	}
 	
 	@Override
-	public CompoundNBT getShareableData(CompoundNBT compound){
+	public CompoundTag getShareableData(CompoundTag compound){
 		return compound;
 	}
 }

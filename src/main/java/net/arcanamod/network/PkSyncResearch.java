@@ -3,12 +3,12 @@ package net.arcanamod.network;
 import net.arcanamod.systems.research.Puzzle;
 import net.arcanamod.systems.research.ResearchBook;
 import net.arcanamod.systems.research.ResearchBooks;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.INBT;
-import net.minecraft.nbt.ListNBT;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.network.NetworkEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -22,41 +22,41 @@ import static java.lang.String.format;
  * Syncs all existing research. Not to be confused with {@link PkSyncPlayerResearch}, which syncs the player's progress.
  */
 public class PkSyncResearch{
-	
+
 	public static final Logger LOGGER = LogManager.getLogger();
-	
+
 	Map<ResourceLocation, ResearchBook> books;
 	Map<ResourceLocation, Puzzle> puzzles;
-	
+
 	public PkSyncResearch(Map<ResourceLocation, ResearchBook> books, Map<ResourceLocation, Puzzle> puzzles){
 		this.books = books;
 		this.puzzles = puzzles;
 	}
-	
-	public static void encode(PkSyncResearch msg, PacketBuffer buffer){
-		CompoundNBT nbt = new CompoundNBT();
-		ListNBT books = new ListNBT(), puzzles = new ListNBT();
+
+	public static void encode(PkSyncResearch msg, FriendlyByteBuf buffer){
+		CompoundTag nbt = new CompoundTag();
+		ListTag books = new ListTag(), puzzles = new ListTag();
 		msg.books.forEach((location, book) -> books.add(book.serialize(location)));
 		nbt.put("books", books);
 		msg.puzzles.forEach((location, puzzle) -> puzzles.add(puzzle.getPassData()));
 		nbt.put("puzzles", puzzles);
-		buffer.writeCompoundTag(nbt);
+		buffer.writeNbt(nbt);
 	}
-	
-	public static PkSyncResearch decode(PacketBuffer buffer){
-		CompoundNBT nbt = buffer.readCompoundTag();
+
+	public static PkSyncResearch decode(FriendlyByteBuf buffer){
+		CompoundTag compoundTag = buffer.readNbt();
 		PkSyncResearch msg = new PkSyncResearch(new LinkedHashMap<>(), new LinkedHashMap<>());
-		if(nbt != null){
-			ListNBT books = nbt.getList("books", 10);
-			for(INBT bookElement : books){
-				CompoundNBT book = (CompoundNBT)bookElement;
+		if(compoundTag != null){
+			ListTag books = compoundTag.getList("books", 10);
+			for(Tag bookElement : books){
+				CompoundTag book = (CompoundTag) bookElement;
 				// deserialize book
 				ResearchBook book1 = ResearchBook.deserialize(book);
 				msg.books.put(book1.getKey(), book1);
 			}
-			ListNBT puzzles = nbt.getList("puzzles", 10);
-			for(INBT puzzleElement : puzzles){
-				CompoundNBT puzzle = (CompoundNBT)puzzleElement;
+			ListTag puzzles = compoundTag.getList("puzzles", 10);
+			for(Tag puzzleElement : puzzles){
+				CompoundTag puzzle = (CompoundTag) puzzleElement;
 				// deserialize puzzle
 				Puzzle puzzleObject = Puzzle.deserialize(puzzle);
 				if(puzzleObject != null)

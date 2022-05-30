@@ -1,12 +1,12 @@
 package net.arcanamod.systems.research;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.JsonToNBT;
-import net.minecraft.nbt.StringNBT;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.TagParser;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
  *
  * @see ResearchEntry
  * @see Pin
- * @see JsonToNBT
+ * @see TagParser
  */
 public class Icon{
 	
@@ -62,11 +62,11 @@ public class Icon{
 	
 	public static Icon fromString(String string){
 		// Check if theres NBT data.
-		CompoundNBT tag = null;
+		CompoundTag tag = null;
 		if(string.contains("{")){
 			String[] split = string.split("\\{", 2);
 			try{
-				tag = JsonToNBT.getTagFromJson("{" + split[1]);
+				tag = TagParser.parseTag("{" + split[1]);
 				string = split[0];
 			}catch(CommandSyntaxException e){
 				e.printStackTrace();
@@ -104,14 +104,14 @@ public class Icon{
 		return resourceLocation.toString() + nbtToJson(stack.getTag());
 	}
 	
-	private static String nbtToJson(CompoundNBT nbt){
+	private static String nbtToJson(CompoundTag nbt){
 		StringBuilder stringbuilder = new StringBuilder("{");
-		Collection<String> collection = nbt.keySet();
+		Collection<String> collection = nbt.getAllKeys();
 		
 		for(String s : collection){
 			if(stringbuilder.length() != 1)
 				stringbuilder.append(',');
-			stringbuilder.append(handleEscape(s)).append(':').append(nbt.get(s) instanceof StringNBT ? "\"" + nbt.getString(s) + "\"" : nbt.get(s));
+			stringbuilder.append(handleEscape(s)).append(':').append(nbt.get(s) instanceof StringTag ? "\"" + nbt.getString(s) + "\"" : nbt.get(s));
 		}
 		return stringbuilder.append('}').toString();
 	}
@@ -119,6 +119,6 @@ public class Icon{
 	private static final Pattern SIMPLE_VALUE = Pattern.compile("[A-Za-z0-9._+-]+");
 	
 	protected static String handleEscape(String in){
-		return SIMPLE_VALUE.matcher(in).matches() ? "\"" + in + "\"" : StringNBT.quoteAndEscape(in);
+		return SIMPLE_VALUE.matcher(in).matches() ? "\"" + in + "\"" : StringTag.quoteAndEscape(in);
 	}
 }

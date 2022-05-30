@@ -1,22 +1,23 @@
 package net.arcanamod.worldgen.trees;
 
-import net.minecraft.block.trees.Tree;
-import net.minecraft.world.gen.feature.BaseTreeFeatureConfig;
-import net.minecraft.world.gen.feature.ConfiguredFeature;
-import javax.annotation.Nonnull;
+import net.minecraft.core.Holder;
+import net.minecraft.world.level.block.grower.AbstractTreeGrower;
+import net.minecraft.world.level.levelgen.feature.ConfiguredFeature;
+import org.jetbrains.annotations.NotNull;
+
 import javax.annotation.Nullable;
 import java.util.Random;
 
-public class DummyTree extends Tree{
+public class DummyTree extends AbstractTreeGrower {
 	/**
-	 * Get a {@link ConfiguredFeature} of tree
+	 * Get a {@link ConfiguredFeature} Holder of tree grower.
 	 *
-	 * @param randomIn
-	 * @param largeHive
+	 * @param pRandom
+	 * @param pLargeHive
 	 */
 	@Nullable
 	@Override
-	protected ConfiguredFeature<BaseTreeFeatureConfig, ?> getTreeFeature(Random randomIn, boolean largeHive) {
+	protected Holder<? extends ConfiguredFeature<?, ?>> getConfiguredFeature(@NotNull Random pRandom, boolean pLargeHive) {
 		return null;
 	}
 }

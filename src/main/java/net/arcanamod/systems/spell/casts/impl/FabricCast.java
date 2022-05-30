@@ -3,22 +3,15 @@ package net.arcanamod.systems.spell.casts.impl;
 import net.arcanamod.ArcanaVariables;
 import net.arcanamod.aspects.Aspect;
 import net.arcanamod.aspects.Aspects;
-import net.arcanamod.blocks.tiles.ResearchTableTileEntity;
 import net.arcanamod.systems.spell.casts.Cast;
-import net.minecraft.crash.CrashReport;
-import net.minecraft.crash.CrashReportCategory;
-import net.minecraft.crash.ReportedException;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.Util;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.world.World;
-import org.apache.logging.log4j.LogManager;
+import net.minecraft.Util;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 
 public class FabricCast extends Cast {
 
@@ -38,24 +31,24 @@ public class FabricCast extends Cast {
 	}
 
 	@Override
-	public ActionResultType useOnEntity(PlayerEntity caster, Entity target) {
-		target.sendMessage(new StringTextComponent("MCP is broken everyone shold use Yarn"), Util.DUMMY_UUID);
-		target.sendMessage(new StringTextComponent(target.getName().getString()+" gets gold award on r/minecraft"), Util.DUMMY_UUID);
-		target.sendMessage(new StringTextComponent(target.getName().getString()+" gets gold award on r/minecraft"), Util.DUMMY_UUID);
-		return ActionResultType.SUCCESS;
+	public InteractionResult useOnEntity(Player caster, Entity target) {
+		target.sendMessage(new TextComponent("MCP is broken everyone shold use Yarn"), Util.NIL_UUID);
+		target.sendMessage(new TextComponent(target.getName().getString()+" gets gold award on r/minecraft"), Util.NIL_UUID);
+		target.sendMessage(new TextComponent(target.getName().getString()+" gets gold award on r/minecraft"), Util.NIL_UUID);
+		return InteractionResult.SUCCESS;
 	}
 
 	@Override
-	public ActionResultType useOnBlock(PlayerEntity caster, World world, BlockPos blockTarget) {
-		caster.sendMessage(new StringTextComponent("hehe Ticking block entity"), Util.DUMMY_UUID);
-		return ActionResultType.SUCCESS;
+	public InteractionResult useOnBlock(Player caster, Level world, BlockPos blockTarget) {
+		caster.sendMessage(new TextComponent("hehe Ticking block entity"), Util.NIL_UUID);
+		return InteractionResult.SUCCESS;
 	}
 
 	@Override
-	public ActionResultType useOnPlayer(PlayerEntity playerTarget) {
-		playerTarget.sendMessage(new StringTextComponent("MCP is broken everyone shold use Yarn"), Util.DUMMY_UUID);
-		playerTarget.sendMessage(new StringTextComponent(playerTarget.getName().getString()+" gets gold award on r/minecraft"), Util.DUMMY_UUID);
-		playerTarget.sendMessage(new StringTextComponent(playerTarget.getName().getString()+" gets gold award on r/minecraft"), Util.DUMMY_UUID);
-		return ActionResultType.SUCCESS;
+	public InteractionResult useOnPlayer(Player playerTarget) {
+		playerTarget.sendMessage(new TextComponent("MCP is broken everyone shold use Yarn"), Util.NIL_UUID);
+		playerTarget.sendMessage(new TextComponent(playerTarget.getName().getString()+" gets gold award on r/minecraft"), Util.NIL_UUID);
+		playerTarget.sendMessage(new TextComponent(playerTarget.getName().getString()+" gets gold award on r/minecraft"), Util.NIL_UUID);
+		return InteractionResult.SUCCESS;
 	}
 }

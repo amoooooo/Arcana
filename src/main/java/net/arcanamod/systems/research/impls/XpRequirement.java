@@ -1,9 +1,9 @@
 package net.arcanamod.systems.research.impls;
 
 import net.arcanamod.systems.research.Requirement;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 
 import static net.arcanamod.Arcana.arcLoc;
 
@@ -11,11 +11,11 @@ public class XpRequirement extends Requirement{
 	
 	public static final ResourceLocation TYPE = arcLoc("xp");
 	
-	public boolean satisfied(PlayerEntity player){
+	public boolean satisfied(Player player){
 		return player.experienceLevel >= getAmount();
 	}
 	
-	public void take(PlayerEntity player){
+	public void take(Player player){
 		player.experienceLevel -= getAmount();
 	}
 	
@@ -23,7 +23,7 @@ public class XpRequirement extends Requirement{
 		return TYPE;
 	}
 	
-	public CompoundNBT data(){
-		return new CompoundNBT();
+	public CompoundTag data(){
+		return new CompoundTag();
 	}
 }

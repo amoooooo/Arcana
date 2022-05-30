@@ -3,45 +3,46 @@ package net.arcanamod.worldgen.trees.features;
 import com.mojang.datafixers.Products;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import mcp.MethodsReturnNonnullByDefault;
 import net.arcanamod.worldgen.ArcanaFeatures;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MutableBoundingBox;
-import net.minecraft.world.gen.IWorldGenerationReader;
-import net.minecraft.world.gen.feature.BaseTreeFeatureConfig;
-import net.minecraft.world.gen.feature.FeatureSpread;
-import net.minecraft.world.gen.foliageplacer.FoliagePlacer;
-import net.minecraft.world.gen.foliageplacer.FoliagePlacerType;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.core.BlockPos;
+import net.minecraft.util.Mth;
+import net.minecraft.util.valueproviders.IntProvider;
+import net.minecraft.world.level.LevelSimulatedReader;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.feature.configurations.TreeConfiguration;
+import net.minecraft.world.level.levelgen.feature.foliageplacers.FoliagePlacer;
+import net.minecraft.world.level.levelgen.feature.foliageplacers.FoliagePlacerType;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Random;
-import java.util.Set;
-
-import static net.minecraft.world.gen.feature.Feature.isAirAt;
+import java.util.function.BiConsumer;
 
 @ParametersAreNonnullByDefault
 @MethodsReturnNonnullByDefault
-public class GreatwoodFoliagePlacer extends FoliagePlacer{
-	
+public class GreatwoodFoliagePlacer extends FoliagePlacer {
+
 	public static final Codec<GreatwoodFoliagePlacer> CODEC = RecordCodecBuilder.create(a -> makeCodec(a).apply(a, GreatwoodFoliagePlacer::new));
-	
-	protected static <P extends GreatwoodFoliagePlacer> Products.P3<RecordCodecBuilder.Mu<P>, FeatureSpread, FeatureSpread, Integer> makeCodec(RecordCodecBuilder.Instance<P> builder) {
-		return func_242830_b(builder).and(Codec.intRange(0, 24).fieldOf("height").forGetter((placer) -> placer.height));
+
+	protected static <P extends GreatwoodFoliagePlacer> Products.P3<RecordCodecBuilder.Mu<P>, IntProvider, IntProvider, Integer> makeCodec(RecordCodecBuilder.Instance<P> builder) {
+		return foliagePlacerParts(builder).and(Codec.intRange(0, 24).fieldOf("height").forGetter((placer) -> placer.height));
 	}
-	
+
 	protected final int height;
-	
-	public GreatwoodFoliagePlacer(FeatureSpread radius, FeatureSpread offset, int height){
+
+	public GreatwoodFoliagePlacer(IntProvider radius, IntProvider offset, int height){
 		super(radius, offset);
 		this.height = height;
 	}
-	
-	protected FoliagePlacerType<?> getPlacerType(){
+
+	@Override
+	protected FoliagePlacerType<?> type(){
 		return ArcanaFeatures.GREATWOOD_FOLIAGE.get();
 	}
-	
+
 	// generate
-	protected void func_230372_a_(IWorldGenerationReader world, Random rand, BaseTreeFeatureConfig config, int height, Foliage foliage, int p_230372_6_, int radius, Set<BlockPos> foliagePositions, int p_230372_9_, MutableBoundingBox box){
+	protected void createFoliage(LevelSimulatedReader pLevel, BiConsumer<BlockPos, BlockState> pBlockSetter, Random pRandom, TreeConfiguration pConfiguration, int pMaxFreeTreeHeight, FoliagePlacer.FoliageAttachment pAttachment, int pFoliageHeight, int pFoliageRadius, int pOffset) {
+		/* OG
 		BlockPos node = foliage.func_236763_a_();
 		// Iterate in a spheroid to place leaves
 		for(int x1 = -3; x1 <= 3; x1++){
@@ -55,25 +56,31 @@ public class GreatwoodFoliagePlacer extends FoliagePlacer{
 					rZ *= 1.1;
 					rY *= 0.95;
 					double dist = rX * rX + rZ * rZ + rY * rY;
-					
+
 					// Apply randomness to the radius and place leaves
-					if(dist <= 1 + (rand.nextDouble() * 0.3)){
-						BlockPos local = node.add(x1, y1, z1);
+					if(dist <= 1 + (pRandom.nextDouble() * 0.3)){
+						BlockPos local = node.offset(x1, y1, z1);
 						if(isAirAt(world, local)){
 							world.setBlockState(local, config.leavesProvider.getBlockState(rand, local), 3);
 						}
 					}
 				}
 			}
+		}*/
+
+		for(int i = pOffset; i >= pOffset - pFoliageHeight; --i) {
+			int j = pFoliageRadius + (i != pOffset && i != pOffset - pFoliageHeight ? 1 : 0);
+			this.placeLeavesRow(pLevel, pBlockSetter, pRandom, pConfiguration, pAttachment.pos(), j, i, pAttachment.doubleTrunk());
 		}
 	}
-	
-	// height
-	public int func_230374_a_(Random rand, int trunkHeight, BaseTreeFeatureConfig config){
-		return 3;
+
+	@Override
+	public int foliageHeight(Random pRandom, int pHeight, TreeConfiguration pConfig) {
+		return this.height;
 	}
-	
-	protected boolean func_230373_a_(Random p_230373_1_, int p_230373_2_, int p_230373_3_, int p_230373_4_, int p_230373_5_, boolean p_230373_6_){
-		return false;
+
+	@Override
+	protected boolean shouldSkipLocation(Random pRandom, int pLocalX, int pLocalY, int pLocalZ, int pRange, boolean pLarge) {
+		return Mth.square((float)pLocalX + 0.25F) + Mth.square((float)pLocalZ + 0.25F) > (float)(pRange * pRange);
 	}
 }

@@ -1,6 +1,6 @@
 package net.arcanamod.systems.spell.modules.core;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.arcanamod.aspects.Aspect;
 import net.arcanamod.aspects.AspectUtils;
 import net.arcanamod.aspects.Aspects;
@@ -12,9 +12,9 @@ import net.arcanamod.systems.spell.modules.SpellModule;
 import net.arcanamod.systems.spell.modules.circle.DoubleModifierCircle;
 import net.arcanamod.systems.spell.modules.circle.SinModifierCircle;
 import net.arcanamod.systems.spell.modules.circle.SingleModifierCircle;
-import net.minecraft.client.renderer.ItemRenderer;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.client.renderer.entity.ItemRenderer;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 
 import java.awt.*;
 
@@ -27,13 +27,13 @@ public class CastCircle extends SpellModule {
 	}
 
 	@Override
-	public void fromNBT(CompoundNBT compound) {
+	public void fromNBT(CompoundTag compound) {
 		super.fromNBT(compound);
 		cast = Casts.castMap.get(new ResourceLocation(compound.getString("cast")));
 	}
 
 	@Override
-	public CompoundNBT toNBT(CompoundNBT compound) {
+	public CompoundTag toNBT(CompoundTag compound) {
 		super.toNBT(compound);
 		if (cast instanceof Cast) {
 			compound.putString("cast", ((Cast) cast).getId().toString());
@@ -99,23 +99,23 @@ public class CastCircle extends SpellModule {
 	}
 
 	@Override
-	public void renderUnderMouse(int mouseX, int mouseY, ItemRenderer itemRenderer, boolean floating, MatrixStack stack) {
+	public void renderUnderMouse(int mouseX, int mouseY, ItemRenderer itemRenderer, boolean floating, PoseStack stack) {
 		ClientUiUtil.drawTexturedModalRect(stack, mouseX - getWidth() / 2, mouseY - getHeight() / 2, 32, 16, getWidth(), getHeight());
 		if (!floating || cast == null) {
 			ClientUiUtil.drawTexturedModalRect(stack, mouseX - 8, mouseY - 8, 32, 0, 16, 16);
 		} else {
-			itemRenderer.renderItemAndEffectIntoGUI(AspectUtils.getItemStackForAspect(cast.getSpellAspect()), mouseX - 8, mouseY - 8);
+			itemRenderer.renderGuiItem(AspectUtils.getItemStackForAspect(cast.getSpellAspect()), mouseX - 8, mouseY - 8);
 		}
 	}
 
 	@Override
-	public void renderInMinigame(int mouseX, int mouseY, ItemRenderer itemRenderer, boolean floating, MatrixStack stack) {
+	public void renderInMinigame(int mouseX, int mouseY, ItemRenderer itemRenderer, boolean floating, PoseStack stack) {
 		ClientUiUtil.drawTexturedModalRect(stack, x - getWidth() / 2, y - getHeight() / 2, 32, 16, getWidth(), getHeight());
 		if (!floating) {
 			if (cast == null) {
 				ClientUiUtil.drawTexturedModalRect(stack, x - 8, y - 8, 32, 0, 16, 16);
 			} else {
-				itemRenderer.renderItemAndEffectIntoGUI(AspectUtils.getItemStackForAspect(cast.getSpellAspect()), x - 8, y - 8);
+				itemRenderer.renderGuiItem(AspectUtils.getItemStackForAspect(cast.getSpellAspect()), x - 8, y - 8);
 			}
 		}
 	}

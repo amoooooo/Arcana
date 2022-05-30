@@ -1,16 +1,16 @@
 package net.arcanamod.items;
 
-import mcp.MethodsReturnNonnullByDefault;
-import net.arcanamod.systems.research.ResearchBooks;
 import net.arcanamod.capabilities.Researcher;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.EquipmentSlotType;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.world.World;
+import net.arcanamod.systems.research.ResearchBooks;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -18,28 +18,27 @@ import static net.arcanamod.Arcana.arcLoc;
 
 @ParametersAreNonnullByDefault
 @MethodsReturnNonnullByDefault
-public class ScribbledNotesCompleteItem extends Item{
-    
+public class ScribbledNotesCompleteItem extends Item {
     private static final ResourceLocation ROOT = arcLoc("root");
     
-    public ScribbledNotesCompleteItem(Properties properties){
+    public ScribbledNotesCompleteItem(Properties properties) {
         super(properties);
     }
 
     @Override
-    public boolean hasEffect(ItemStack stack){
+    public boolean isFoil(ItemStack stack) {
         return true;
     }
 
     // gives players the arcanum on right click
     @Override
-    public ActionResult<ItemStack> onItemRightClick(World world, PlayerEntity player, Hand hand){
-        if(hand == Hand.MAIN_HAND)
-            player.setItemStackToSlot(EquipmentSlotType.MAINHAND, ItemStack.EMPTY);
+    public InteractionResultHolder<ItemStack> use(Level world, Player player, InteractionHand hand) {
+        if(hand == InteractionHand.MAIN_HAND)
+            player.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
         else
-            player.setItemStackToSlot(EquipmentSlotType.OFFHAND, ItemStack.EMPTY);
-        player.addItemStackToInventory(new ItemStack(ArcanaItems.ARCANUM.get()));
+            player.setItemSlot(EquipmentSlot.OFFHAND, ItemStack.EMPTY);
+        player.addItem(new ItemStack(ArcanaItems.ARCANUM.get()));
         Researcher.getFrom(player).advanceEntry(ResearchBooks.getEntry(ROOT));
-        return super.onItemRightClick(world, player, hand);
+        return super.use(world, player, hand);
     }
 }

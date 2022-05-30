@@ -1,10 +1,10 @@
 package net.arcanamod.systems.research;
 
 import com.google.gson.JsonObject;
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.arcanamod.systems.research.impls.ImageLayer;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -16,7 +16,7 @@ public abstract class BackgroundLayer{
 	////////// static stuff
 	
 	private static Map<ResourceLocation, Supplier<BackgroundLayer>> factories = new LinkedHashMap<>();
-	private static Map<ResourceLocation, Function<CompoundNBT, BackgroundLayer>> deserializers = new LinkedHashMap<>();
+	private static Map<ResourceLocation, Function<CompoundTag, BackgroundLayer>> deserializers = new LinkedHashMap<>();
 	
 	public static BackgroundLayer makeLayer(ResourceLocation type, JsonObject content, ResourceLocation file, float speed, float vanishZoom){
 		if(getBlank(type) != null){
@@ -29,9 +29,9 @@ public abstract class BackgroundLayer{
 			return null;
 	}
 	
-	public static BackgroundLayer deserialize(CompoundNBT passData){
+	public static BackgroundLayer deserialize(CompoundTag passData){
 		ResourceLocation type = new ResourceLocation(passData.getString("type"));
-		CompoundNBT data = passData.getCompound("data");
+		CompoundTag data = passData.getCompound("data");
 		float speed = passData.getFloat("speed");
 		float vanishZoom = passData.getFloat("vanishZoom");
 		if(deserializers.get(type) != null){
@@ -73,8 +73,8 @@ public abstract class BackgroundLayer{
 		return this;
 	}
 	
-	public CompoundNBT getPassData(){
-		CompoundNBT nbt = new CompoundNBT();
+	public CompoundTag getPassData(){
+		CompoundTag nbt = new CompoundTag();
 		nbt.putString("type", type().toString());
 		nbt.put("data", data());
 		nbt.putFloat("speed", speed());
@@ -84,9 +84,9 @@ public abstract class BackgroundLayer{
 	
 	public abstract ResourceLocation type();
 	
-	public abstract CompoundNBT data();
+	public abstract CompoundTag data();
 	
 	public abstract void load(JsonObject data, ResourceLocation file);
 	
-	public abstract void render(MatrixStack stack, int x, int y, int width, int height, float xPan, float yPan, float parallax, float xOff, float yOff, float zoom);
+	public abstract void render(PoseStack stack, int x, int y, int width, int height, float xPan, float yPan, float parallax, float xOff, float yOff, float zoom);
 }

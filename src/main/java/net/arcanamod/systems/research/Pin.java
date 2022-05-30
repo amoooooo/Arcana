@@ -1,9 +1,9 @@
 package net.arcanamod.systems.research;
 
 import net.arcanamod.systems.research.impls.AbstractCraftingSection;
-import net.minecraft.item.Item;
-import net.minecraft.item.crafting.IRecipe;
-import net.minecraft.world.World;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.crafting.Recipe;
 
 import javax.annotation.Nullable;
 
@@ -26,15 +26,15 @@ public class Pin{
 	
 	// Grabs the icon and item from the entry.
 	// If a recipe isn't being pointed to, uses the icon of the entry its in.
-	public Pin(ResearchEntry entry, int stage, World world){
+	public Pin(ResearchEntry entry, int stage, ServerLevel world){
 		// Check if the section is a recipe.
 		if(entry.sections().size() > stage){
 			this.stage = stage;
 			EntrySection section = entry.sections().get(stage);
-			if(section instanceof AbstractCraftingSection && world.getRecipeManager().getRecipe(((AbstractCraftingSection)section).getRecipe()).isPresent()){
-				IRecipe<?> recipe = world.getRecipeManager().getRecipe(((AbstractCraftingSection)section).getRecipe()).get();
-				this.icon = new Icon(recipe.getRecipeOutput());
-				this.result = recipe.getRecipeOutput().getItem();
+			if(section instanceof AbstractCraftingSection && world.getRecipeManager().byKey(((AbstractCraftingSection)section).getRecipe()).isPresent()){
+				Recipe<?> recipe = world.getRecipeManager().byKey(((AbstractCraftingSection)section).getRecipe()).get();
+				this.icon = new Icon(recipe.getResultItem());
+				this.result = recipe.getResultItem().getItem();
 			}else
 				this.icon = entry.icons().get(0);
 		}else

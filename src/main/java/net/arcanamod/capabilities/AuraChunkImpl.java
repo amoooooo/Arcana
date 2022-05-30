@@ -2,11 +2,10 @@ package net.arcanamod.capabilities;
 
 import net.arcanamod.world.Node;
 import net.arcanamod.world.NodeType;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.INBT;
-import net.minecraft.nbt.ListNBT;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraftforge.common.util.Constants;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.world.phys.AABB;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -33,10 +32,10 @@ public class AuraChunkImpl implements AuraChunk{
 		return new ArrayList<>(nodes);
 	}
 	
-	public Collection<Node> getNodesWithinAABB(AxisAlignedBB bounds){
+	public Collection<Node> getNodesWithinAABB(AABB bounds){
 		Collection<Node> set = new ArrayList<>();
 		for(Node node : getNodes())
-			if(bounds.contains(node.getX(), node.getY(), node.getZ()))
+			if(bounds.contains(node.x(), node.y(), node.z()))
 				set.add(node);
 		return set;
 	}
@@ -49,11 +48,11 @@ public class AuraChunkImpl implements AuraChunk{
 		return set;
 	}
 	
-	public Collection<Node> getNodesOfTypeWithinAABB(NodeType type, AxisAlignedBB bounds){
+	public Collection<Node> getNodesOfTypeWithinAABB(NodeType type, AABB bounds){
 		Collection<Node> set = new ArrayList<>();
 		for(Node node : getNodes())
 			if(node.type().equals(type))
-				if(bounds.contains(node.getX(), node.getY(), node.getZ()))
+				if(bounds.contains(node.x(), node.y(), node.z()))
 					set.add(node);
 		return set;
 	}
@@ -71,10 +70,10 @@ public class AuraChunkImpl implements AuraChunk{
 		taint = Math.max(newTaint, 0);
 	}
 	
-	public CompoundNBT serializeNBT(){
+	public CompoundTag serializeNBT(){
 		// Just make a list of CompoundNBTs from each node.
-		CompoundNBT compound = new CompoundNBT();
-		ListNBT data = new ListNBT();
+		CompoundTag compound = new CompoundTag();
+		ListTag data = new ListTag();
 		for(Node node : nodes)
 			data.add(node.serializeNBT());
 		compound.put("nodes", data);
@@ -82,13 +81,13 @@ public class AuraChunkImpl implements AuraChunk{
 		return compound;
 	}
 	
-	public void deserializeNBT(@Nonnull CompoundNBT data){
+	public void deserializeNBT(@Nonnull CompoundTag data){
 		// Go through the list and deserialize each entry
-		ListNBT list = data.getList("nodes", Constants.NBT.TAG_COMPOUND);
+		ListTag list = data.getList("nodes", Tag.TAG_COMPOUND);
 		Collection<Node> nodeSet = new ArrayList<>(list.size());
-		for(INBT nodeNBT : list)
-			if(nodeNBT instanceof CompoundNBT)
-				nodeSet.add(Node.fromNBT((CompoundNBT)nodeNBT));
+		for(Tag nodeNBT : list)
+			if(nodeNBT instanceof CompoundTag)
+				nodeSet.add(Node.fromTag((CompoundTag)nodeNBT));
 		nodes = nodeSet;
 		taint = data.getFloat("flux");
 		// load old integer taint

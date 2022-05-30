@@ -1,10 +1,10 @@
 package net.arcanamod.world;
 
 import net.arcanamod.util.Pair;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -13,15 +13,15 @@ import java.util.HashMap;
 public final class WorldInteractions {
 	private static final Logger LOGGER = LogManager.getLogger();
 
-	protected World world;
+	protected Level world;
 
 	public static HashMap<Block, Pair<Block,Block>> freezable = new HashMap<>();
 
-	private WorldInteractions(World world) {
+	private WorldInteractions(Level world) {
 		this.world = world;
 	}
 
-	public static WorldInteractions fromWorld(World world){
+	public static WorldInteractions fromWorld(Level world){
 		return new WorldInteractions(world);
 	}
 
@@ -29,10 +29,10 @@ public final class WorldInteractions {
 		Block targetedBlock = world.getBlockState(position).getBlock();
 		if (freezable.containsKey(targetedBlock)) {
 			Pair<Block,Block> replace = freezable.get(targetedBlock);
-			world.setBlockState(position, replace.getFirst().getDefaultState());
+			world.setBlockAndUpdate(position, replace.getFirst().defaultBlockState());
 			if (replace.getSecond() != Blocks.AIR){
-				if (world.getBlockState(position.up()).isAir(world,position.up())){
-					world.setBlockState(position.up(), replace.getSecond().getDefaultState());
+				if (world.getBlockState(position.above()).isAir()){
+					world.setBlockAndUpdate(position.above(), replace.getSecond().defaultBlockState());
 				}
 			}
 		}

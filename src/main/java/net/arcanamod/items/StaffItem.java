@@ -4,16 +4,17 @@ import net.arcanamod.aspects.AspectStack;
 import net.arcanamod.items.attachment.Cap;
 import net.arcanamod.items.attachment.Core;
 import net.arcanamod.systems.spell.Spell;
-import net.minecraft.client.resources.I18n;
-import net.minecraft.client.util.ITooltipFlag;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemGroup;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.*;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.World;
+import net.minecraft.client.resources.language.I18n;
+import net.minecraft.core.NonNullList;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
@@ -59,7 +60,7 @@ public class StaffItem extends MagicDeviceItem{
 	}
 
 	public static ItemStack withCapAndCore(String cap, String core){
-		CompoundNBT nbt = new CompoundNBT();
+		CompoundTag nbt = new CompoundTag();
 		nbt.putString("cap", cap);
 		nbt.putString("core", core);
 		ItemStack stack = new ItemStack(ArcanaItems.WAND.get(), 1);
@@ -79,8 +80,8 @@ public class StaffItem extends MagicDeviceItem{
 		return 72000;
 	}
 
-	public void fillItemGroup(ItemGroup group, NonNullList<ItemStack> items){
-		if(isInGroup(group)){
+	public void fillItemCategory(CreativeModeTab group, NonNullList<ItemStack> items){
+		if(allowdedIn(group)){
 			// iron/wooden, silver/dair, gold/greatwood, thaumium/silverwood, void/arcanium
 			items.add(withCapAndCoreForCt("iron_cap", "wood_wand"));
 			items.add(withCapAndCoreForCt("silver_cap", "dair_wand"));
@@ -91,7 +92,7 @@ public class StaffItem extends MagicDeviceItem{
 	}
 
 	public static ItemStack withCapAndCoreForCt(String cap, String core){
-		CompoundNBT nbt = new CompoundNBT();
+		CompoundTag nbt = new CompoundTag();
 		nbt.putString("cap", "arcana:" + cap);
 		nbt.putString("core", "arcana:" + core);
 		ItemStack stack = new ItemStack(ArcanaItems.STAFF.get(), 1);
@@ -100,16 +101,16 @@ public class StaffItem extends MagicDeviceItem{
 	}
 
 	@OnlyIn(Dist.CLIENT)
-	public void addInformation(@Nonnull ItemStack stack, @Nullable World world, @Nonnull List<ITextComponent> tooltip, @Nonnull ITooltipFlag flag){
-		super.addInformation(stack, world, tooltip, flag);
+	public void appendHoverText(@Nonnull ItemStack stack, @Nullable Level world, @Nonnull List<Component> tooltip, @Nonnull TooltipFlag flag){
+		super.appendHoverText(stack, world, tooltip, flag);
 		// Add focus info
 		Spell spell = getFocus(stack).getSpell(stack);
 		if(spell != null){
-			Optional<ITextComponent> name = spell.getName(getFocusData(stack).getCompound("Spell"));
-			name.ifPresent(e -> tooltip.add(new TranslationTextComponent("tooltip.arcana.spell", e,
+			Optional<Component> name = spell.getName(getFocusData(stack).getCompound("Spell"));
+			name.ifPresent(e -> tooltip.add(new TranslatableComponent("tooltip.arcana.spell", e,
 					spell.getSpellCosts().toList().stream()
 							.map(AspectStack::getAspect)
-							.map(aspect -> I18n.format("aspect." + aspect.name()))
+							.map(aspect -> I18n.get("aspect." + aspect.name()))
 							.collect(Collectors.joining(", ")))));
 		}
 	}

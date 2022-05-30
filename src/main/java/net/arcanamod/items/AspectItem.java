@@ -1,14 +1,14 @@
 package net.arcanamod.items;
 
-import mcp.MethodsReturnNonnullByDefault;
-import net.arcanamod.Arcana;
-import net.minecraft.client.util.ITooltipFlag;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TextFormatting;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.World;
+import net.minecraft.ChatFormatting;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.level.Level;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -16,23 +16,24 @@ import java.util.List;
 
 @ParametersAreNonnullByDefault
 @MethodsReturnNonnullByDefault
-public class AspectItem extends Item{
+public class AspectItem extends Item {
+	private final String aspectName;
 	
-	private String aspectName;
-	
-	public AspectItem(String aspectName){
-		super(new Properties());
+	public AspectItem(String aspectName) {
+		super(new Item.Properties());
 		if(aspectName.startsWith("aspect_"))
 			aspectName = aspectName.substring(7);
 		this.aspectName = aspectName;
 	}
-	
-	public ITextComponent getDisplayName(ItemStack stack){
-		return new TranslationTextComponent("aspect." + aspectName).mergeStyle(TextFormatting.AQUA);
+
+	@Override
+	public Component getName(ItemStack stack) {
+		return new TranslatableComponent("aspect." + aspectName).withStyle(ChatFormatting.AQUA);
 	}
-	
-	public void addInformation(ItemStack stack, @Nullable World worldIn, List<ITextComponent> tooltip, ITooltipFlag flagIn){
-		tooltip.add(new TranslationTextComponent("aspect." + aspectName + ".desc"));
+
+	@Override
+	public void appendHoverText(ItemStack stack, @Nullable Level worldIn, List<Component> tooltip, TooltipFlag flagIn) {
+		tooltip.add(new TranslatableComponent("aspect." + aspectName + ".desc"));
 	}
 	
 	// getCreatorModId may be useful to override, to show who registered the aspect.

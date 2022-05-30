@@ -15,18 +15,31 @@ import net.arcanamod.fluids.ArcanaFluids;
 import net.arcanamod.world.AuraView;
 import net.arcanamod.world.ServerAuraView;
 import net.minecraft.block.*;
+import net.minecraft.client.particle.Particle;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.BlockParticleOption;
+import net.minecraft.core.particles.ParticleOptions;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.IShearable;
 import net.minecraft.particles.BlockParticleData;
 import net.minecraft.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.state.BooleanProperty;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.World;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.*;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.server.ServerWorld;
+import net.minecraftforge.common.IForgeShearable;
 import net.minecraftforge.common.IPlantable;
 
 import java.util.*;
@@ -64,9 +77,9 @@ public class Taint{
 			tainted = new TaintedVineBlock(parent);
 		} else if (parent instanceof SaplingBlock) {
 			tainted = new TaintedSaplingBlock(parent);
-		} else if (parent instanceof IPlantable || parent instanceof IShearable || parent instanceof IGrowable) {
+		} else if (parent instanceof IPlantable || parent instanceof IForgeShearable || parent instanceof BonemealableBlock) {
 			tainted = new TaintedPlantBlock(parent);
-		} else if (parent instanceof StairsBlock) {
+		} else if (parent instanceof StairBlock) {
 			tainted = new TaintedStairsBlock(parent);
 		} else if (parent instanceof SlabBlock) {
 			tainted = new TaintedSlabBlock(parent);
@@ -89,7 +102,7 @@ public class Taint{
 	@SuppressWarnings("deprecation")
 	public static Block deadOf(Block parent, Block... blocks){
 		Block dead;
-		if(parent instanceof IPlantable || parent instanceof IShearable || parent instanceof IGrowable)
+		if(parent instanceof IPlantable || parent instanceof IForgeShearable || parent instanceof BonemealableBlock)
 			dead = new DeadPlantBlock(parent);
 		else
 			dead = new DeadBlock(parent);
@@ -151,16 +164,16 @@ public class Taint{
 		DEAD_MAP.put(original, dead);
 	}
 
-	public static void tickTaintedBlock(BlockState state, ServerWorld world, BlockPos pos, Random random){
+	public static void tickTaintedBlock(BlockState state, ServerLevel world, BlockPos pos, Random random){
 		// if we're near a pure node, purify
 		if(isBlockProtectedByPureNode(world, pos)){
 			BlockState pureState = switchBlock(state, getPureOfBlock(state.getBlock()));
-			world.setBlockState(pos, pureState);
+			world.setBlockAndUpdate(pos, pureState);
 			if(pureState.isAir()){
 				int rnd = world.getRandom().nextInt(9) + 4;
 				for(int j = 0; j < rnd; j++)
 					world.addParticle(
-							new BlockParticleData(ParticleTypes.FALLING_DUST, Blocks.BLACK_CONCRETE_POWDER.getDefaultState()),
+							new BlockParticleOption(ParticleTypes.FALLING_DUST, Blocks.BLACK_CONCRETE_POWDER.defaultBlockState()),
 							pos.getX() + 0.5f + ((world.getRandom().nextInt(9) - 4) / 10f), pos.getY() + 0.5f + ((world.getRandom().nextInt(9) - 4) / 10f), pos.getZ() + 0.5f + ((world.getRandom().nextInt(9) - 4) / 10f),
 							0.1f, 0.1f, 0.1f
 					);
@@ -204,7 +217,7 @@ public class Taint{
 		}
 	}
 
-	public static boolean isBlockProtectedByPureNode(World world, BlockPos pos){
+	public static boolean isBlockProtectedByPureNode(Level world, BlockPos pos){
 		AuraView view = AuraView.SIDED_FACTORY.apply(world);
 		int range = ArcanaConfig.PURE_NODE_TAINT_PROTECT_RANGE.get();
 		return view.getNodesWithinAABB(new AxisAlignedBB(pos).grow(range))
@@ -235,19 +248,19 @@ public class Taint{
 		}
 	}
 
-	public static boolean isAreaInTaintBiome(BlockPos pos, IBlockReader world){
+	public static boolean isAreaInTaintBiome(BlockPos pos, Level world){
 		// check if they're in a taint biome
 		// 7x13x7 cube, centred on the entity
 		// at least 20 tainted blocks
-		BlockPos.Mutable mutable = new BlockPos.Mutable();
+		BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos();
 		int counter = 0;
 		for(int x = -3; x < 7; x++)
 			for(int y = -6; y < 13; y++)
 				for(int z = -3; z < 7; z++){
-					mutable.setPos(pos.getX() + x, pos.getY() + y, pos.getZ() + z);
+					mutable.set(pos.getX() + x, pos.getY() + y, pos.getZ() + z);
 					try{
 						BlockState state = world.getBlockState(mutable);
-						if(isTainted(state.getBlock()) && (!state.hasProperty(UNTAINTED) || !state.get(UNTAINTED)))
+						if(isTainted(state.getBlock()) && (!state.hasProperty(UNTAINTED) || !state.getValue(UNTAINTED)))
 							counter++;
 					}catch(ArrayIndexOutOfBoundsException ignored){
 						// ChunkRenderCache throws this when you try to check somewhere "out-of-bounds".

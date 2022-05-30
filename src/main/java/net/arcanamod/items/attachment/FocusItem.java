@@ -1,16 +1,14 @@
 package net.arcanamod.items.attachment;
 
 import net.arcanamod.systems.spell.Spell;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemUseContext;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.Hand;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.world.World;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -33,7 +31,7 @@ public class FocusItem extends Item implements Focus{
 		//addPropertyOverride(new ResourceLocation("style"), (stack, world, entity) -> stack.getOrCreateTag().getInt("style"));
 	}
 	
-	public ResourceLocation getModelLocation(CompoundNBT nbt){
+	public ResourceLocation getModelLocation(CompoundTag nbt){
 		return modelLocations.get(Math.min(nbt.getInt("style"), modelLocations.size() - 1));
 	}
 	
@@ -55,10 +53,10 @@ public class FocusItem extends Item implements Focus{
 	}
 
 	@Override
-	public ActionResult<ItemStack> onItemRightClick(World worldIn, PlayerEntity playerIn, Hand handIn) {
+	public InteractionResultHolder<ItemStack> use(Level worldIn, Player playerIn, InteractionHand handIn) {
 		Logger logger = LogManager.getLogger();
-		logger.debug(playerIn.getHeldItem(handIn).getOrCreateTag().toString());
-		return super.onItemRightClick(worldIn, playerIn, handIn);
+		logger.debug(playerIn.getItemInHand(handIn).getOrCreateTag().toString());
+		return super.use(worldIn, playerIn, handIn);
 	}
 
 	public static int getColourAspect(ItemStack stack) {

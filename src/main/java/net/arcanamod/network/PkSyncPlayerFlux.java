@@ -8,8 +8,8 @@ import net.arcanamod.client.ClientAuraHandler;
 import net.arcanamod.client.ClientUtils;
 import net.arcanamod.systems.research.Puzzle;
 import net.arcanamod.systems.research.ResearchBooks;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
@@ -21,11 +21,11 @@ public class PkSyncPlayerFlux{
 		this.flux = flux;
 	}
 	
-	public static void encode(PkSyncPlayerFlux msg, PacketBuffer buffer){
+	public static void encode(PkSyncPlayerFlux msg, FriendlyByteBuf buffer){
 		buffer.writeFloat(msg.flux);
 	}
 	
-	public static PkSyncPlayerFlux decode(PacketBuffer buffer){
+	public static PkSyncPlayerFlux decode(FriendlyByteBuf buffer){
 		return new PkSyncPlayerFlux(buffer.readFloat());
 	}
 	

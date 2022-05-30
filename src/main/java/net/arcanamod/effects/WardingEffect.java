@@ -1,16 +1,16 @@
 package net.arcanamod.effects;
 
-import net.minecraft.potion.Effect;
-import net.minecraft.potion.EffectType;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.effect.MobEffectCategory;
 
-public class WardingEffect extends Effect{
+public class WardingEffect extends MobEffect {
 	
 	public WardingEffect(){
-		super(EffectType.BENEFICIAL, 0x3255FF);
+		super(MobEffectCategory.BENEFICIAL, 0x3255FF);
 	}
 	
 	@Override
-	public boolean isReady(int duration, int amplifier){
+	public boolean isDurationEffectTick(int duration, int amplifier){
 		return true;
 	}
 }

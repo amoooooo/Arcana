@@ -2,10 +2,10 @@ package net.arcanamod.systems.research.impls;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.arcanamod.systems.research.BackgroundLayer;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -29,8 +29,8 @@ public class ImageLayer extends BackgroundLayer{
 		return TYPE;
 	}
 	
-	public CompoundNBT data(){
-		CompoundNBT data = new CompoundNBT();
+	public CompoundTag data(){
+		CompoundTag data = new CompoundTag();
 		data.putString("image", image.toString());
 		return data;
 	}
@@ -47,7 +47,7 @@ public class ImageLayer extends BackgroundLayer{
 			LOGGER.error("Field \"image\" for an image background layer was not defined, in " + file + "!");
 	}
 	
-	public void render(MatrixStack stack, int x, int y, int width, int height, float xPan, float yPan, float parallax, float xOff, float yOff, float zoom){
+	public void render(PoseStack stack, int x, int y, int width, int height, float xPan, float yPan, float parallax, float xOff, float yOff, float zoom){
 	
 	}
 }

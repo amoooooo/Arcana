@@ -1,9 +1,9 @@
 package net.arcanamod.blocks.bases;
 
-import net.minecraft.block.DoorBlock;
+import net.minecraft.world.level.block.DoorBlock;
 
 // literally the same BS as ArcanaTrapDoorBlock
-public class ADoorBlock extends DoorBlock{
+public class ADoorBlock extends DoorBlock {
 	
 	public ADoorBlock(Properties properties){
 		super(properties);

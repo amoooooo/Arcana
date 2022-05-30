@@ -1,5 +1,6 @@
 package net.arcanamod;
 
+import com.mojang.blaze3d.platform.ScreenManager;
 import net.arcanamod.aspects.AspectUtils;
 import net.arcanamod.aspects.handlers.AspectHandler;
 import net.arcanamod.blocks.ArcanaBlocks;
@@ -9,12 +10,14 @@ import net.arcanamod.client.event.*;
 import net.arcanamod.client.gui.*;
 import net.arcanamod.client.model.WandModelLoader;
 import net.arcanamod.client.model.tainted.TaintedFoxModel;
-import net.arcanamod.client.model.tainted.TaintedSheepModel;
 import net.arcanamod.client.model.tainted.TaintedWolfModel;
 import net.arcanamod.client.model.tainted.TaintedZombieModel;
 import net.arcanamod.client.render.*;
 import net.arcanamod.client.render.particles.ArcanaParticles;
-import net.arcanamod.client.render.tainted.*;
+import net.arcanamod.client.render.tainted.TaintedCaveSpiderRender;
+import net.arcanamod.client.render.tainted.TaintedEntityRender;
+import net.arcanamod.client.render.tainted.TaintedSlimeRender;
+import net.arcanamod.client.render.tainted.TaintedSquidRenderer;
 import net.arcanamod.client.render.tiles.*;
 import net.arcanamod.client.research.BackgroundLayerRenderers;
 import net.arcanamod.client.research.EntrySectionRenderer;
@@ -27,28 +30,21 @@ import net.arcanamod.event.ResearchEvent;
 import net.arcanamod.fluids.ArcanaFluids;
 import net.arcanamod.items.ArcanaItems;
 import net.arcanamod.items.attachment.FocusItem;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.ScreenManager;
+import net.minecraft.client.renderer.BiomeColors;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.RenderTypeLookup;
-import net.minecraft.client.renderer.entity.model.*;
-import net.minecraft.client.settings.KeyBinding;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemModelsProperties;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.world.World;
-import net.minecraft.world.biome.BiomeColors;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraftforge.client.ClientRegistry;
 import net.minecraftforge.client.event.ModelRegistryEvent;
-import net.minecraftforge.client.model.ModelLoader;
 import net.minecraftforge.client.model.ModelLoaderRegistry;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.ExtensionPoint;
 import net.minecraftforge.fml.ModLoadingContext;
-import net.minecraftforge.fml.client.registry.ClientRegistry;
-import net.minecraftforge.fml.client.registry.RenderingRegistry;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -62,13 +58,14 @@ import static net.arcanamod.Arcana.arcLoc;
  */
 public class ClientProxy extends CommonProxy{
 	
-	public static KeyBinding SWAP_FOCUS_BINDING = new KeyBinding("key.arcana.swap_focus", GLFW.GLFW_KEY_G, "key.categories.mod.arcana");
+	public static KeyMapping SWAP_FOCUS_BINDING = new KeyMapping("key.arcana.swap_focus", GLFW.GLFW_KEY_G, "key.categories.mod.arcana");
 	
 	public void construct(){
 		super.construct();
 		ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, ArcanaConfig.CLIENT_SPEC);
-		ModLoadingContext.get().registerExtensionPoint(ExtensionPoint.CONFIGGUIFACTORY,
-				() -> (mc, screen) -> new ConfigScreen(screen));
+//		What even is this?
+//		ModLoadingContext.get().registerExtensionPoint(ExtensionPoint.CONFIGGUIFACTORY,
+//				() -> (mc, screen) -> new ConfigScreen(screen));
 		IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
 		bus.addListener(TextureStitchHandler::onTextureStitch);
 		bus.addListener(BakeEventHandler::onModelBake);
@@ -99,7 +96,7 @@ public class ClientProxy extends CommonProxy{
 		
 		// there's an event for this, but putting it here seems to affect literally nothing. huh.
 		// I'm not at all surprised.
-		
+		/* No idea what this is...
 		ItemModelsProperties.registerProperty(ArcanaItems.PHIAL.get(), new ResourceLocation("aspect"), (itemStack, world, livingEntity) -> {
 			AspectHandler vis = AspectHandler.getFrom(itemStack);
 			if(vis == null)
@@ -117,11 +114,12 @@ public class ClientProxy extends CommonProxy{
 				return 1;
 			return 0;
 		});
-		
+		*/
+
 		Minecraft inst = Minecraft.getInstance();
 		
 		inst.getBlockColors().register((state, access, pos, index) ->
-						access != null && pos != null ? BiomeColors.getWaterColor(access, pos) : -1,
+						access != null && pos != null ? BiomeColors.getAverageWaterColor(access, pos) : -1,
 				ArcanaBlocks.CRUCIBLE.get()
 		);
 		
@@ -131,7 +129,7 @@ public class ClientProxy extends CommonProxy{
 		);
 		
 		inst.getBlockColors().register((state, access, pos, index) ->
-						access != null && pos != null ? BiomeColors.getFoliageColor(access, pos) : -1,
+						access != null && pos != null ? BiomeColors.getAverageFoliageColor(access, pos) : -1,
 				ArcanaBlocks.GREATWOOD_LEAVES.get(),
 				ArcanaBlocks.WILLOW_LEAVES.get(),
 				ArcanaBlocks.EUCALYPTUS_LEAVES.get(),
@@ -157,35 +155,35 @@ public class ClientProxy extends CommonProxy{
 		ClientUtils.onResearchChange(even);
 	}
 	
-	public PlayerEntity getPlayerOnClient(){
+	public Player getPlayerOnClient(){
 		return Minecraft.getInstance().player;
 	}
 	
-	public World getWorldOnClient(){
-		return Minecraft.getInstance().world;
+	public LevelAccessor getWorldOnClient(){
+		return Minecraft.getInstance().level;
 	}
 	
 	public void scheduleOnClient(Runnable runnable){
-		Minecraft.getInstance().deferTask(runnable);
+		Minecraft.getInstance().submit(runnable);
 	}
 	
 	public ItemStack getAspectItemStackForDisplay(){
 		if(Minecraft.getInstance().player == null)
 			return super.getAspectItemStackForDisplay();
 		else
-			return AspectUtils.aspectStacks.get((Minecraft.getInstance().player.ticksExisted / 20) % AspectUtils.aspectStacks.size());
+			return AspectUtils.aspectStacks.get((Minecraft.getInstance().player.tickCount / 20) % AspectUtils.aspectStacks.size());
 	}
 	
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	protected void registerRenders(){
 		//Tile Entity Special Render
-		ClientRegistry.bindTileEntityRenderer(ArcanaTiles.JAR_TE.get(), JarTileEntityRender::new);
-		ClientRegistry.bindTileEntityRenderer(ArcanaTiles.ASPECT_SHELF_TE.get(), AspectBookshelfTileEntityRenderer::new);
-		ClientRegistry.bindTileEntityRenderer(ArcanaTiles.VACUUM_TE.get(), VacuumTileEntityRender::new);
-		ClientRegistry.bindTileEntityRenderer(ArcanaTiles.PEDESTAL_TE.get(), PedestalTileEntityRenderer::new);
-		ClientRegistry.bindTileEntityRenderer(ArcanaTiles.ASPECT_VALVE_TE.get(), AspectValveTileEntityRenderer::new);
-		ClientRegistry.bindTileEntityRenderer(ArcanaTiles.ASPECT_WINDOW_TE.get(), PipeTileEntityRenderer::new);
-		ClientRegistry.bindTileEntityRenderer(ArcanaTiles.ASPECT_PUMP_TE.get(), PipeTileEntityRenderer::new);
+		ClientRegistry.registerEntityShader(ArcanaTiles.JAR_TE.get(), JarTileEntityRender::new);
+		ClientRegistry.registerEntityShader(ArcanaTiles.ASPECT_SHELF_TE.get(), AspectBookshelfTileEntityRenderer::new);
+		ClientRegistry.registerEntityShader(ArcanaTiles.VACUUM_TE.get(), VacuumTileEntityRender::new);
+		ClientRegistry.registerEntityShader(ArcanaTiles.PEDESTAL_TE.get(), PedestalTileEntityRenderer::new);
+		ClientRegistry.registerEntityShader(ArcanaTiles.ASPECT_VALVE_TE.get(), AspectValveTileEntityRenderer::new);
+		ClientRegistry.registerEntityShader(ArcanaTiles.ASPECT_WINDOW_TE.get(), PipeTileEntityRenderer::new);
+		ClientRegistry.registerEntityShader(ArcanaTiles.ASPECT_PUMP_TE.get(), PipeTileEntityRenderer::new);
 		
 		//Special Render
 		ModelLoader.addSpecialModel(new ResourceLocation(MODID, "item/phial"));

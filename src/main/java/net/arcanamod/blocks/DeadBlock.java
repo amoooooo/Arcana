@@ -3,12 +3,12 @@ package net.arcanamod.blocks;
 import net.arcanamod.Arcana;
 import net.arcanamod.blocks.bases.GroupedBlock;
 import net.arcanamod.systems.taint.Taint;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.item.ItemGroup;
-import net.minecraft.particles.ParticleTypes;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
@@ -28,7 +28,7 @@ public class DeadBlock extends DelegatingBlock implements GroupedBlock {
 	 * of whether the block can receive random update ticks
 	 */
 	@OnlyIn(Dist.CLIENT)
-	public void animateTick(BlockState stateIn, World worldIn, BlockPos pos, Random rand) {
+	public void animateTick(BlockState stateIn, Level worldIn, BlockPos pos, Random rand) {
 		super.animateTick(stateIn, worldIn, pos, rand);
 		if (stateIn.getBlock()==ArcanaBlocks.DEAD_GRASS_BLOCK.get())
 			if (rand.nextInt(4) == 0) {
@@ -39,7 +39,7 @@ public class DeadBlock extends DelegatingBlock implements GroupedBlock {
 
 	@Nullable
 	@Override
-	public ItemGroup getGroup(){
+	public CreativeModeTab getGroup(){
 		return Arcana.TAINT;
 	}
 }

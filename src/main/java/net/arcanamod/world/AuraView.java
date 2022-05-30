@@ -1,15 +1,16 @@
 package net.arcanamod.world;
 
 import net.arcanamod.capabilities.AuraChunk;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.math.*;
-import net.minecraft.util.math.vector.Vector3d;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.ChunkStatus;
-import net.minecraft.world.chunk.IChunk;
-import net.minecraft.world.server.ServerWorld;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.*;
 import java.util.function.Function;
@@ -17,14 +18,14 @@ import java.util.stream.Collectors;
 
 public interface AuraView{
 	
-	Function<World, AuraView> SIDED_FACTORY = (world) -> world instanceof ClientWorld ? new ClientAuraView((ClientWorld)world) :  world instanceof ServerWorld ? new ServerAuraView((ServerWorld)world) : null;
+	Function<Level, AuraView> SIDED_FACTORY = (world) -> world instanceof ClientLevel ? new ClientAuraView((ClientLevel)world) :  world instanceof ServerLevel ? new ServerAuraView((ServerLevel)world) : null;
 	double HALF_NODE = .7;
 	
 	Collection<Node> getAllNodes();
 	
-	World getWorld();
+	Level getWorld();
 	
-	static AuraView getSided(World world){
+	static AuraView getSided(Level world){
 		return SIDED_FACTORY.apply(world);
 	}
 	
@@ -32,10 +33,13 @@ public interface AuraView{
 	default void tickTaintLevel(){}
 	
 	default AuraChunk getAuraChunk(ChunkPos pos){
-		IChunk chunk = getWorld().getChunk(pos.x, pos.z, ChunkStatus.FULL, false);
-		if(chunk instanceof Chunk)
-			return AuraChunk.getFrom((Chunk)chunk);
+		/*
+		LevelChunk chunk = getWorld().getChunk(pos.x, pos.z, ChunkStatus.FULL, false);
+		if(chunk instanceof LevelChunk)
+			return AuraChunk.getFrom((LevelChunk)chunk);
 		return null;
+		 */
+		return AuraChunk.getFrom(getWorld().getChunk(pos.x, pos.z));
 	}
 	
 	default AuraChunk getAuraChunk(BlockPos pos){
@@ -100,7 +104,7 @@ public interface AuraView{
 		return setFluxOfChunk(new ChunkPos(pos), amount);
 	}
 	
-	default Collection<Node> getNodesWithinAABB(AxisAlignedBB bounds){
+	default Collection<Node> getNodesWithinAABB(AABB bounds){
 		// get all related chunks
 		// that is, all chunks between minX and maxX, minZ and maxZ
 		ChunkPos min = new ChunkPos(new BlockPos(bounds.minX, 0, bounds.minZ));
@@ -132,7 +136,7 @@ public interface AuraView{
 				.findFirst();
 	}
 	
-	default Collection<Node> getNodesOfTypeWithinAABB(AxisAlignedBB bounds, NodeType type){
+	default Collection<Node> getNodesOfTypeWithinAABB(AABB bounds, NodeType type){
 		// get all related chunks
 		// that is, all chunks between minX and maxX, minZ and maxZ
 		ChunkPos min = new ChunkPos(new BlockPos(bounds.minX, 0, bounds.minZ));
@@ -166,7 +170,7 @@ public interface AuraView{
 				.collect(Collectors.toList());
 	}
 	
-	default Collection<Node> getNodesWithinAABBExcluding(AxisAlignedBB bounds, Node excluded){
+	default Collection<Node> getNodesWithinAABBExcluding(AABB bounds, Node excluded){
 		// get all related chunks
 		// that is, all chunks between minX and maxX, minZ and maxZ
 		ChunkPos min = new ChunkPos(new BlockPos(bounds.minX, 0, bounds.minZ));
@@ -187,7 +191,7 @@ public interface AuraView{
 				.collect(Collectors.toList());
 	}
 	
-	default Collection<Node> getNodesOfTypeWithinAABBExcluding(AxisAlignedBB bounds, NodeType type, Node excluded){
+	default Collection<Node> getNodesOfTypeWithinAABBExcluding(AABB bounds, NodeType type, Node excluded){
 		// get all related chunks
 		// that is, all chunks between minX and maxX, minZ and maxZ
 		ChunkPos min = new ChunkPos(new BlockPos(bounds.minX, 0, bounds.minZ));
@@ -229,19 +233,19 @@ public interface AuraView{
 		return false;
 	}
 	
-	default Optional<Node> raycast(Vector3d from, double length, boolean ignoreBlocks, Entity entity){
-		Vector3d to = from.add(entity.getLookVec().mul(length, length, length));
-		BlockRayTraceResult result = null;
+	default Optional<Node> raycast(Vec3 from, double length, boolean ignoreBlocks, Entity entity){
+		Vec3 to = from.add(entity.getEyePosition().multiply(length, length, length));
+		BlockHitResult result = null;
 		if(!ignoreBlocks)
-			result = getWorld().rayTraceBlocks(new RayTraceContext(from, to, RayTraceContext.BlockMode.OUTLINE, RayTraceContext.FluidMode.NONE, entity));
-		AxisAlignedBB box = new AxisAlignedBB(from, to);
+			result = getWorld().clip(new ClipContext(from, to, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, entity));
+		AABB box = new AABB(from, to);
 		Node ret = null;
 		double curDist = length;
 		for(Node node : getNodesWithinAABB(box)){
-			AxisAlignedBB nodeBox = new AxisAlignedBB(node.x - HALF_NODE, node.y - HALF_NODE, node.z - HALF_NODE, node.x + HALF_NODE, node.y + HALF_NODE, node.z + HALF_NODE);
-			Optional<Vector3d> optional = nodeBox.rayTrace(from, to);
+			AABB nodeBox = new AABB(node.x - HALF_NODE, node.y - HALF_NODE, node.z - HALF_NODE, node.x + HALF_NODE, node.y + HALF_NODE, node.z + HALF_NODE);
+			Optional<Vec3> optional = nodeBox.clip(from, to);
 			if(optional.isPresent()){
-				double dist = from.squareDistanceTo(optional.get());
+				double dist = from.distanceToSqr(optional.get());
 				if(dist < curDist){
 					ret = node;
 					curDist = dist;
@@ -250,12 +254,12 @@ public interface AuraView{
 		}
 		if(!ignoreBlocks)
 			// Blocked by a block
-			if(result.getHitVec().squareDistanceTo(from) < curDist)
+			if(result.getLocation().distanceToSqr(from) < curDist)
 				return Optional.empty();
 		return Optional.ofNullable(ret);
 	}
 	
-	default Optional<Node> raycast(Vector3d from, double length, Entity entity){
+	default Optional<Node> raycast(Vec3 from, double length, Entity entity){
 		return raycast(from, length, false, entity);
 	}
 }

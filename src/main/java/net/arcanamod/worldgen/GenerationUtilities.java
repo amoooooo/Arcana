@@ -1,6 +1,6 @@
 package net.arcanamod.worldgen;
 
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
 
 import java.util.ArrayList;
 
@@ -62,7 +62,7 @@ public class GenerationUtilities{
 		if(height == 0){
 			return blockPosList;
 		}else if(height < 0){
-			origin = origin.add(0, height, 0);
+			origin = origin.offset(0, height, 0);
 			height = -height;
 		}
 		
@@ -108,10 +108,10 @@ public class GenerationUtilities{
 				}
 				
 				for(int y = 0; y < height; ++y){
-					blockPosList.add(origin.add(x, y, z));
-					blockPosList.add(origin.add(-x, y, z));
-					blockPosList.add(origin.add(x, y, -z));
-					blockPosList.add(origin.add(-x, y, -z));
+					blockPosList.add(origin.offset(x, y, z));
+					blockPosList.add(origin.offset(-x, y, z));
+					blockPosList.add(origin.offset(x, y, -z));
+					blockPosList.add(origin.offset(-x, y, -z));
 					
 					if(type == GenType.THICK && lastX != x && lastZ != z){
 						lastZ = z;
@@ -124,10 +124,10 @@ public class GenerationUtilities{
 			if(addThick){
 				addThick = false;
 				for(int y = 0; y < height; ++y){
-					blockPosList.add(origin.add(x - 1, y, maxZThick));
-					blockPosList.add(origin.add(-x + 1, y, maxZThick));
-					blockPosList.add(origin.add(x - 1, y, -maxZThick));
-					blockPosList.add(origin.add(-x + 1, y, -maxZThick));
+					blockPosList.add(origin.offset(x - 1, y, maxZThick));
+					blockPosList.add(origin.offset(-x + 1, y, maxZThick));
+					blockPosList.add(origin.offset(x - 1, y, -maxZThick));
+					blockPosList.add(origin.offset(-x + 1, y, -maxZThick));
 				}
 			}
 		}
@@ -237,14 +237,14 @@ public class GenerationUtilities{
 						}
 					}
 					
-					blockPosList.add(origin.add(x, y, z));
-					blockPosList.add(origin.add(-x, y, z));
-					blockPosList.add(origin.add(x, -y, z));
-					blockPosList.add(origin.add(x, y, -z));
-					blockPosList.add(origin.add(-x, -y, z));
-					blockPosList.add(origin.add(x, -y, -z));
-					blockPosList.add(origin.add(-x, y, -z));
-					blockPosList.add(origin.add(-x, -y, -z));
+					blockPosList.add(origin.offset(x, y, z));
+					blockPosList.add(origin.offset(-x, y, z));
+					blockPosList.add(origin.offset(x, -y, z));
+					blockPosList.add(origin.offset(x, y, -z));
+					blockPosList.add(origin.offset(-x, -y, z));
+					blockPosList.add(origin.offset(x, -y, -z));
+					blockPosList.add(origin.offset(-x, y, -z));
+					blockPosList.add(origin.offset(-x, -y, -z));
 				}
 			}
 		}
@@ -270,10 +270,10 @@ public class GenerationUtilities{
 			for(int x = 0; x <= size; ++x){
 				for(int z = 0; z <= size; ++z){
 					if((type == GenType.FULL && z <= size && x <= size) || z == size || x == size){
-						blockPosList.add(origin.add(x, y, z));
-						blockPosList.add(origin.add(-x, y, z));
-						blockPosList.add(origin.add(x, y, -z));
-						blockPosList.add(origin.add(-x, y, -z));
+						blockPosList.add(origin.offset(x, y, z));
+						blockPosList.add(origin.offset(-x, y, z));
+						blockPosList.add(origin.offset(x, y, -z));
+						blockPosList.add(origin.offset(-x, y, -z));
 					}
 				}
 			}
@@ -297,7 +297,7 @@ public class GenerationUtilities{
 		
 		for(int x = -size; x <= size; ++x){
 			for(int z = -size; z <= size; ++z){
-				blockPosList.add(center.add(x, 0, z));
+				blockPosList.add(center.offset(x, 0, z));
 			}
 		}
 		
@@ -324,7 +324,7 @@ public class GenerationUtilities{
 		if(xTranslation == 0 && zTranslation == 0){
 			// only y axis
 			for(int y = 0; y <= height; ++y){
-				blockPosList.addAll(GenerationUtilities.GenerateSquare(start.add(0, y, 0), diameter));
+				blockPosList.addAll(GenerationUtilities.GenerateSquare(start.offset(0, y, 0), diameter));
 			}
 		}else{
 			// 3 axis trunk

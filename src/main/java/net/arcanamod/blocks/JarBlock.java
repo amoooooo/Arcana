@@ -1,38 +1,42 @@
 package net.arcanamod.blocks;
 
-import mcp.MethodsReturnNonnullByDefault;
 import net.arcanamod.ArcanaConfig;
 import net.arcanamod.aspects.AspectLabel;
 import net.arcanamod.aspects.AspectUtils;
 import net.arcanamod.aspects.Aspects;
 import net.arcanamod.blocks.bases.WaterloggableBlock;
 import net.arcanamod.blocks.pipes.TubeBlock;
-import net.arcanamod.blocks.tiles.JarTileEntity;
+import net.arcanamod.blocks.tiles.JarBlockEntity;
 import net.arcanamod.items.ArcanaItems;
 import net.arcanamod.items.MagicDeviceItem;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.client.util.ITooltipFlag;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.item.ItemEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.BlockItemUseContext;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.state.BooleanProperty;
-import net.minecraft.state.StateContainer;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.Direction;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.BlockRayTraceResult;
-import net.minecraft.util.math.shapes.ISelectionContext;
-import net.minecraft.util.math.shapes.VoxelShape;
-import net.minecraft.util.text.*;
-import net.minecraft.world.IBlockReader;
-import net.minecraft.world.World;
+import net.minecraft.ChatFormatting;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -42,150 +46,150 @@ import java.util.Objects;
 @SuppressWarnings("deprecation")
 @ParametersAreNonnullByDefault
 @MethodsReturnNonnullByDefault
-public class JarBlock extends WaterloggableBlock {
+public class JarBlock extends WaterloggableBlock implements EntityBlock {
 	public static final BooleanProperty UP = BooleanProperty.create("up");
 	private Type type;
 
 	public JarBlock(Properties properties, Type type){
 		super(properties);
 		this.type = type;
-		setDefaultState(stateContainer.getBaseState()
-				.with(UP, Boolean.FALSE)
-				.with(WATERLOGGED, Boolean.FALSE));
+		this.registerDefaultState(this.getStateDefinition().any()
+				.setValue(UP, Boolean.FALSE)
+				.setValue(WATERLOGGED, Boolean.FALSE));
 	}
 	
-	public VoxelShape SHAPE = Block.makeCuboidShape(3, 0, 3, 13, 14, 13);
+	public VoxelShape SHAPE = Block.box(3, 0, 3, 13, 14, 13);
 	
 	@Override
-	public VoxelShape getShape(BlockState state, IBlockReader worldIn, BlockPos pos, ISelectionContext context){
+	public VoxelShape getShape(BlockState state, BlockGetter worldIn, BlockPos pos, CollisionContext context){
 		return SHAPE;
 	}
 	
 	@Override
-	public VoxelShape getCollisionShape(BlockState state, IBlockReader worldIn, BlockPos pos, ISelectionContext context){
+	public VoxelShape getCollisionShape(BlockState state, BlockGetter worldIn, BlockPos pos, CollisionContext context){
 		return SHAPE;
 	}
 	
-	@Override
-	public boolean hasTileEntity(BlockState state){
-		return true;
-	}
+//	@Override
+//	public boolean hasTileEntity(BlockState state){
+//		return true;
+//	}
 
 	@Nullable
 	@Override
-	public TileEntity createTileEntity(BlockState state, IBlockReader world){
-		return new JarTileEntity(this.type);
+	public BlockEntity newBlockEntity(BlockPos pos, BlockState state){
+		return new JarBlockEntity(this.type, pos, state);
 	}
 	
 	@Override
-	protected void fillStateContainer(StateContainer.Builder<Block, BlockState> builder){
-		super.fillStateContainer(builder);
+	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder){
+		super.createBlockStateDefinition(builder);
 		builder.add(UP);
 	}
 	
-	public BlockState getStateForPlacement(BlockItemUseContext context){
+	public BlockState getStateForPlacement(BlockPlaceContext context){
 		return super.getStateForPlacement(context)
-				.with(UP, false);
+				.setValue(UP, false);
 	}
 
 	@Override
-	public void neighborChanged(BlockState state, World worldIn, BlockPos pos, Block blockIn, BlockPos fromPos, boolean isMoving){
-		if(worldIn.getBlockState(pos.up()).getBlock() instanceof TubeBlock)
-			worldIn.setBlockState(pos, state.with(UP, true));
+	public void neighborChanged(BlockState state, Level worldIn, BlockPos pos, Block blockIn, BlockPos fromPos, boolean isMoving){
+		if(worldIn.getBlockState(pos.above()).getBlock() instanceof TubeBlock)
+			worldIn.setBlockAndUpdate(pos, state.setValue(UP, true));
 		else
-			worldIn.setBlockState(pos, state.with(UP, false));
+			worldIn.setBlockAndUpdate(pos, state.setValue(UP, false));
 	}
 	
 	@Override
-	public void onBlockAdded(BlockState state, World worldIn, BlockPos pos, BlockState oldState, boolean isMoving){
-		if(worldIn.getBlockState(pos.up()).getBlock() instanceof TubeBlock)
-			worldIn.setBlockState(pos, state.with(UP, true));
+	public void onPlace(BlockState state, Level worldIn, BlockPos pos, BlockState oldState, boolean isMoving){
+		if(worldIn.getBlockState(pos.above()).getBlock() instanceof TubeBlock)
+			worldIn.setBlockAndUpdate(pos, state.setValue(UP, true));
 		else
-			worldIn.setBlockState(pos, state.with(UP, false));
+			worldIn.setBlockAndUpdate(pos, state.setValue(UP, false));
 	}
 
 	@Override
-	public void onBlockPlacedBy(World worldIn, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
-		if (placer != null && ((JarTileEntity) Objects.requireNonNull(worldIn.getTileEntity(pos))).label != null) {
-			((JarTileEntity) Objects.requireNonNull(worldIn.getTileEntity(pos))).label.direction = getYaw(placer);
+	public void setPlacedBy(Level worldIn, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
+		if (placer != null && ((JarBlockEntity) Objects.requireNonNull(worldIn.getBlockEntity(pos))).label != null) {
+			((JarBlockEntity) Objects.requireNonNull(worldIn.getBlockEntity(pos))).label.direction = getYaw(placer);
 		}
-		super.onBlockPlacedBy(worldIn, pos, state, placer, stack);
+		super.setPlacedBy(worldIn, pos, state, placer, stack);
 	}
 
 	@Override
-	public ActionResultType onBlockActivated(BlockState state, World worldIn, BlockPos pos, PlayerEntity player, Hand handIn, BlockRayTraceResult hit) {
-		JarTileEntity jar = ((JarTileEntity) Objects.requireNonNull(worldIn.getTileEntity(pos)));
-		if (jar.label == null && player.getHeldItem(handIn).getItem() == ArcanaItems.LABEL.get()) {
+	public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
+		JarBlockEntity jar = ((JarBlockEntity) Objects.requireNonNull(worldIn.getBlockEntity(pos)));
+		if (jar.label == null && player.getItemInHand(handIn).getItem() == ArcanaItems.LABEL.get()) {
 			if (!player.isCreative()) {
-				player.getHeldItem(handIn).setCount(player.getHeldItem(handIn).getCount() - 1);
+				player.getItemInHand(handIn).setCount(player.getItemInHand(handIn).getCount() - 1);
 			}
-			if (hit.getFace() != Direction.UP && hit.getFace() != Direction.DOWN) {
-				jar.label = new AspectLabel(hit.getFace());
+			if (hit.getDirection() != Direction.UP && hit.getDirection() != Direction.DOWN) {
+				jar.label = new AspectLabel(hit.getDirection());
 			} else {
 				jar.label = new AspectLabel(getYaw(player));
 			}
-		} else if (player.getHeldItem(handIn).getItem() instanceof MagicDeviceItem && player.isCrouching()) {
-			onBlockHarvested(worldIn, pos, state, player);
+		} else if (player.getItemInHand(handIn).getItem() instanceof MagicDeviceItem && player.isCrouching()) {
+			playerWillDestroy(worldIn, pos, state, player);
 			worldIn.removeBlock(pos, false);
-		} else if (jar.label != null && player.getHeldItem(handIn).getItem() == Blocks.AIR.asItem() && player.isCrouching()) {
+		} else if (jar.label != null && player.getItemInHand(handIn).getItem() == Blocks.AIR.asItem() && player.isCrouching()) {
 			if (!player.isCreative()) {
-				if (!player.addItemStackToInventory(new ItemStack(ArcanaItems.LABEL.get()))) {
+				if (!player.addItem(new ItemStack(ArcanaItems.LABEL.get()))) {
 					ItemEntity itementity = new ItemEntity(worldIn,
-							player.getPosX(),
-							player.getPosY(),
-							player.getPosZ(), new ItemStack(ArcanaItems.LABEL.get()));
-					itementity.setNoPickupDelay();
-					worldIn.addEntity(itementity);
+							player.getX(),
+							player.getY(),
+							player.getZ(), new ItemStack(ArcanaItems.LABEL.get()));
+					itementity.setNoPickUpDelay();
+					worldIn.addFreshEntity(itementity);
 				}
 			}
 			jar.label = null;
-		} else if (jar.label != null && player.getHeldItem(handIn).getItem() instanceof MagicDeviceItem) {
-			if (hit.getFace() != Direction.UP && hit.getFace() != Direction.DOWN) {
-				jar.label.direction = hit.getFace();
+		} else if (jar.label != null && player.getItemInHand(handIn).getItem() instanceof MagicDeviceItem) {
+			if (hit.getDirection() != Direction.UP && hit.getDirection() != Direction.DOWN) {
+				jar.label.direction = hit.getDirection();
 			} else {
 				jar.label.direction = getYaw(player);
 			}
 			jar.label.seal = Aspects.EMPTY;
 		}
-		return super.onBlockActivated(state, worldIn, pos, player, handIn, hit);
+		return super.use(state, worldIn, pos, player, handIn, hit);
 	}
 
 	@Override
-	public void harvestBlock(World worldIn, PlayerEntity player, BlockPos pos, BlockState state, @Nullable TileEntity te, ItemStack stack) {
-		if (te instanceof JarTileEntity) {
-			JarTileEntity jte = (JarTileEntity) te;
-			if (!worldIn.isRemote && jte.vis.getHolder(0).getStack().getAmount() == 0 && jte.label == null) {
-				te.setPos(new BlockPos(0, 0, 0));
-				if (((JarTileEntity) te).label != null) {
-					((JarTileEntity) te).label.direction = Direction.NORTH;
+	public void playerDestroy(Level worldIn, Player player, BlockPos pos, BlockState state, @Nullable BlockEntity te, ItemStack stack) {
+		if (te instanceof JarBlockEntity) {
+			JarBlockEntity jte = (JarBlockEntity) te;
+			if (!worldIn.isClientSide && jte.vis.getHolder(0).getStack().getAmount() == 0 && jte.label == null) {
+				// te.setPos(new BlockPos(0, 0, 0));
+				if (((JarBlockEntity) te).label != null) {
+					((JarBlockEntity) te).label.direction = Direction.NORTH;
 				}
-				spawnDrops(state, worldIn, pos, te, player, stack);
+				dropResources(state, worldIn, pos, te, player, stack);
 			}
 		}
 	}
 
 	@Override
-	public void onBlockHarvested(World worldIn, BlockPos pos, BlockState state, PlayerEntity player) {
+	public void playerWillDestroy(Level worldIn, BlockPos pos, BlockState state, Player player) {
 		if (!player.isCreative()) {
-			TileEntity te = worldIn.getTileEntity(pos);
-			if (te instanceof JarTileEntity) {
-				JarTileEntity jte = (JarTileEntity)te;
-				if (!worldIn.isRemote && jte.vis.getHolder(0).getStack().getAmount() != 0 || jte.label != null){
-					te.setPos(new BlockPos(0, 0, 0));
-					if (((JarTileEntity) te).label != null) {
-						((JarTileEntity) te).label.direction = Direction.NORTH;
+			BlockEntity te = worldIn.getBlockEntity(pos);
+			if (te instanceof JarBlockEntity) {
+				JarBlockEntity jte = (JarBlockEntity) te;
+				if (!worldIn.isClientSide && jte.vis.getHolder(0).getStack().getAmount() != 0 || jte.label != null){
+//					te.setPos(new BlockPos(0, 0, 0));
+					if (((JarBlockEntity) te).label != null) {
+						((JarBlockEntity) te).label.direction = Direction.NORTH;
 					}
 					ItemEntity itementity = new ItemEntity(worldIn, pos.getX(), pos.getY(), pos.getZ(), getItem(worldIn, pos, state));
-					itementity.setDefaultPickupDelay();
-					worldIn.addEntity(itementity);
+					itementity.setDefaultPickUpDelay();
+					worldIn.addFreshEntity(itementity);
 				}
 			}
 		}
-		super.onBlockHarvested(worldIn, pos, state, player);
+		super.playerWillDestroy(worldIn, pos, state, player);
 	}
 
 	public static Direction getYaw(LivingEntity player) {
-		int yaw = (int)player.rotationYaw;
+		int yaw = (int)player.getYHeadRot();
 		if (yaw<0)              //due to the yaw running a -360 to positive 360
 			yaw+=360;    //not sure why it's that way
 		yaw+=22;    //centers coordinates you may want to drop this line
@@ -203,45 +207,46 @@ public class JarBlock extends WaterloggableBlock {
 		}
 	}
 
-	public ItemStack getItem(IBlockReader worldIn, BlockPos pos, BlockState state){
-		ItemStack itemstack = super.getItem(worldIn, pos, state);
-		JarTileEntity jarTe = (JarTileEntity)worldIn.getTileEntity(pos);
-		CompoundNBT compoundnbt = jarTe.write(new CompoundNBT());
+	public ItemStack getItem(BlockGetter worldIn, BlockPos pos, BlockState state){
+		ItemStack itemstack = super.getCloneItemStack(worldIn, pos, state);
+		JarBlockEntity jarTe = (JarBlockEntity) worldIn.getBlockEntity(pos);
+		CompoundTag compoundnbt = new CompoundTag();
+		jarTe.saveAdditional(compoundnbt);
 		if(!compoundnbt.isEmpty())
-			itemstack.setTagInfo("BlockEntityTag", compoundnbt);
+			itemstack.setTag(compoundnbt);
 		
 		return itemstack;
 	}
 	
-	public boolean hasComparatorInputOverride(BlockState state){
+	public boolean hasAnalogOutputSignal(BlockState state){
 		return true;
 	}
 	
-	public int getComparatorInputOverride(BlockState block, World world, BlockPos pos){
-		TileEntity te = world.getTileEntity(pos);
-		if(te instanceof JarTileEntity){
-			JarTileEntity jar = (JarTileEntity)te;
+	public int getAnalogOutputSignal(BlockState block, Level world, BlockPos pos){
+		BlockEntity te = world.getBlockEntity(pos);
+		if(te instanceof JarBlockEntity){
+			JarBlockEntity jar = (JarBlockEntity) te;
 			return (int)Math.ceil((jar.vis.getHolder(0).getStack().getAmount() / 100f) * 15);
 		}
 		return 0;
 	}
 
 	@Override
-	public void addInformation(ItemStack stack, @Nullable IBlockReader worldIn, List<ITextComponent> tooltip, ITooltipFlag flagIn) {
-		super.addInformation(stack, worldIn, tooltip, flagIn);
+	public void appendHoverText(ItemStack stack, @Nullable BlockGetter worldIn, List<Component> tooltip, TooltipFlag flagIn) {
+		super.appendHoverText(stack, worldIn, tooltip, flagIn);
 		if (stack.getTag() != null)
 			if(!stack.getTag().isEmpty()) {
-				CompoundNBT cell = stack.getTag().getCompound("BlockEntityTag").getCompound("aspects").getCompound("cells").getCompound("cell_0");
+				CompoundTag cell = stack.getTag().getCompound("BlockEntityTag").getCompound("aspects").getCompound("cells").getCompound("cell_0");
 				if (stack.getTag().getCompound("BlockEntityTag").contains("label")) {
-					tooltip.add(new StringTextComponent("Labelled").setStyle(Style.EMPTY.setColor(Color.fromTextFormatting(TextFormatting.DARK_GRAY))));
+					tooltip.add(new TextComponent("Labelled").setStyle(Style.EMPTY.withColor(ChatFormatting.DARK_GRAY)));
 				}
 				if (cell.getInt("amount") > 0) {
-					tooltip.add(new StringTextComponent(AspectUtils.getLocalizedAspectDisplayName(Objects.requireNonNull(
+					tooltip.add(new TextComponent(AspectUtils.getLocalizedAspectDisplayName(Objects.requireNonNull(
 							AspectUtils.getAspectByName(cell.getString("aspect")))) + ": " +
-							cell.getInt("amount")).setStyle(Style.EMPTY.setColor(Color.fromTextFormatting(TextFormatting.AQUA))));
+							cell.getInt("amount")).setStyle(Style.EMPTY.withColor(ChatFormatting.AQUA)));
 				}
 				if (ArcanaConfig.JAR_ANIMATION_SPEED.get()>=299792458D){ // Small easter egg ;)
-					tooltip.add(new StringTextComponent("\"being faster than light leaves you in the darkness\" -jar").setStyle(Style.EMPTY.setColor(Color.fromTextFormatting(TextFormatting.GRAY))));
+					tooltip.add(new TextComponent("\"being faster than light leaves you in the darkness\" -jar").setStyle(Style.EMPTY.withColor(ChatFormatting.GRAY)));
 				}
 			}
 	}

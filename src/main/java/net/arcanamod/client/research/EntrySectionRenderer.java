@@ -1,12 +1,12 @@
 package net.arcanamod.client.research;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.arcanamod.client.research.impls.*;
 import net.arcanamod.systems.research.EntrySection;
 import net.arcanamod.systems.research.impls.*;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.FontRenderer;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.client.gui.Font;
+import net.minecraft.world.entity.player.Player;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -25,11 +25,11 @@ public interface EntrySectionRenderer<T extends EntrySection>{
 		map.put(AspectCombosSection.TYPE, new AspectCombosSectionRenderer());
 	}
 	
-	void render(MatrixStack stack, T section, int pageIndex, int screenWidth, int screenHeight, int mouseX, int mouseY, boolean right, PlayerEntity player);
+	void render(PoseStack stack, T section, int pageIndex, int screenWidth, int screenHeight, int mouseX, int mouseY, boolean right, Player player);
 	
-	void renderAfter(MatrixStack stack, T section, int pageIndex, int screenWidth, int screenHeight, int mouseX, int mouseY, boolean right, PlayerEntity player);
+	void renderAfter(PoseStack stack, T section, int pageIndex, int screenWidth, int screenHeight, int mouseX, int mouseY, boolean right, Player player);
 	
-	int span(T section, PlayerEntity player);
+	int span(T section, Player player);
 	
 	/**
 	 * Called when the mouse is clicked anywhere on the screen while this section is visible.
@@ -49,7 +49,7 @@ public interface EntrySectionRenderer<T extends EntrySection>{
 * 		Whether the section that is visible is on the left or right.
 	 * @param player
 	 */
-	default boolean onClick(T section, int pageIndex, int screenWidth, int screenHeight, double mouseX, double mouseY, boolean right, PlayerEntity player){
+	default boolean onClick(T section, int pageIndex, int screenWidth, int screenHeight, double mouseX, double mouseY, boolean right, Player player){
 		return false;
 	}
 	
@@ -67,7 +67,7 @@ public interface EntrySectionRenderer<T extends EntrySection>{
 		return Minecraft.getInstance();
 	}
 	
-	default FontRenderer fr(){
-		return mc().fontRenderer;
+	default Font fr(){
+		return mc().font;
 	}
 }

@@ -1,44 +1,46 @@
 package net.arcanamod.blocks.bases;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.item.BlockItemUseContext;
-import net.minecraft.state.DirectionProperty;
-import net.minecraft.state.StateContainer;
-import net.minecraft.state.properties.BlockStateProperties;
-import net.minecraft.util.Direction;
-import net.minecraft.util.Mirror;
-import net.minecraft.util.Rotation;
+import net.minecraft.core.Direction;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.DirectionProperty;
 
 import javax.annotation.Nonnull;
 
 @SuppressWarnings("deprecation")
 public class HorizontalWaterloggableBlock extends WaterloggableBlock{
 	
-	public static final DirectionProperty HORIZONTAL_FACING = BlockStateProperties.HORIZONTAL_FACING;
+	public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
 	
 	public HorizontalWaterloggableBlock(Properties properties){
 		super(properties);
-		setDefaultState(stateContainer.getBaseState().with(WATERLOGGED, Boolean.FALSE).with(HORIZONTAL_FACING, Direction.NORTH));
+		this.registerDefaultState(this.stateDefinition.any()
+				.setValue(WATERLOGGED, Boolean.FALSE)
+				.setValue(FACING, Direction.NORTH));
 	}
 	
 	@Nonnull
-	public BlockState getStateForPlacement(@Nonnull BlockItemUseContext context){
-		return super.getStateForPlacement(context).with(HORIZONTAL_FACING, context.getPlacementHorizontalFacing());
+	public BlockState getStateForPlacement(@Nonnull BlockPlaceContext context){
+		return super.getStateForPlacement(context).setValue(FACING, context.getHorizontalDirection());
 	}
 	
-	protected void fillStateContainer(@Nonnull StateContainer.Builder<Block, BlockState> builder){
+	protected void fillStateContainer(@Nonnull StateDefinition.Builder<Block, BlockState> builder){
 		super.fillStateContainer(builder);
-		builder.add(HORIZONTAL_FACING);
+		builder.add(FACING);
 	}
 	
 	@Nonnull
 	public BlockState rotate(@Nonnull BlockState state, @Nonnull Rotation rot) {
-		return state.with(HORIZONTAL_FACING, rot.rotate(state.get(HORIZONTAL_FACING)));
+		return state.setValue(FACING, rot.rotate(state.getValue(FACING)));
 	}
 	
 	@Nonnull
 	public BlockState mirror(@Nonnull BlockState state, @Nonnull Mirror mirrorIn){
-		return state.rotate(mirrorIn.toRotation(state.get(HORIZONTAL_FACING)));
+		return state.rotate(mirrorIn.getRotation(state.getValue(FACING)));
 	}
 }

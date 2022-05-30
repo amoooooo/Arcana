@@ -1,25 +1,25 @@
 package net.arcanamod.items;
 
-import mcp.MethodsReturnNonnullByDefault;
-import net.arcanamod.Arcana;
+import net.arcanamod.capabilities.Researcher;
 import net.arcanamod.client.ClientUtils;
 import net.arcanamod.systems.research.Puzzle;
 import net.arcanamod.systems.research.ResearchBooks;
-import net.arcanamod.capabilities.Researcher;
 import net.arcanamod.systems.research.ResearchEntry;
-import net.minecraft.client.util.ITooltipFlag;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.Hand;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TextFormatting;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.World;
+import net.minecraft.ChatFormatting;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.level.Level;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -27,26 +27,26 @@ import java.util.List;
 
 @MethodsReturnNonnullByDefault
 @ParametersAreNonnullByDefault
-public class ResearchNoteItem extends Item{
+public class ResearchNoteItem extends Item {
 	
-	private boolean isComplete;
+	private final boolean isComplete;
 	
 	public ResearchNoteItem(Properties properties, boolean complete){
 		super(properties);
 		isComplete = complete;
 	}
 	
-	public ActionResult<ItemStack> onItemRightClick(World world, PlayerEntity player, Hand hand){
+	public InteractionResultHolder<ItemStack> use(Level world, Player player, InteractionHand hand){
 		if(!isComplete)
-			return super.onItemRightClick(world, player, hand);
-		ItemStack stack = player.getHeldItem(hand);
-		CompoundNBT compound = stack.getTag();
+			return super.use(world, player, hand);
+		ItemStack stack = player.getItemInHand(hand);
+		CompoundTag compound = stack.getTag();
 		if(compound != null && compound.contains("puzzle")){
 			Researcher from = Researcher.getFrom(player);
 			Puzzle puzzle = ResearchBooks.puzzles.get(new ResourceLocation(compound.getString("puzzle")));
 			if(!from.isPuzzleCompleted(puzzle)){
 				from.completePuzzle(puzzle);
-				if(!player.abilities.isCreativeMode)
+				if(!player.getAbilities().instabuild)
 					stack.shrink(1);
 				// If this note is associated with a research entry,
 				if(compound.contains("research")){
@@ -58,22 +58,23 @@ public class ResearchNoteItem extends Item{
 						// continue straight away.
 						from.advanceEntry(entry);
 					// display a toast
-					if(world.isRemote())
+					if(world.isClientSide())
 						ClientUtils.displayPuzzleToast(entry);
-				}else if(world.isRemote())
+				}else if(world.isClientSide())
 					ClientUtils.displayPuzzleToast(null);
-				return new ActionResult<>(ActionResultType.SUCCESS, stack);
+				return new InteractionResultHolder<>(InteractionResult.SUCCESS, stack);
 			}
 		}
-		return super.onItemRightClick(world, player, hand);
+		return super.use(world, player, hand);
 	}
-	
-	public void addInformation(ItemStack stack, @Nullable World world, List<ITextComponent> tooltip, ITooltipFlag flag){
-		CompoundNBT compound = stack.getTag();
+
+	@Override
+	public void appendHoverText(ItemStack stack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag){
+		CompoundTag compound = stack.getTag();
 		if(compound != null && compound.contains("research")){
 			ResearchEntry research = ResearchBooks.getEntry(new ResourceLocation(compound.getString("research")));
 			if(research != null)
-				tooltip.add(new TranslationTextComponent(research.name()).mergeStyle(TextFormatting.AQUA));
+				tooltip.add(new TranslatableComponent(research.name()).withStyle(ChatFormatting.AQUA));
 		}
 	}
 }

@@ -1,12 +1,12 @@
 package net.arcanamod.client.research;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.arcanamod.client.research.impls.*;
-import net.arcanamod.systems.research.impls.*;
 import net.arcanamod.systems.research.Requirement;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.ITextComponent;
+import net.arcanamod.systems.research.impls.*;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 
 import java.util.HashMap;
 import java.util.List;
@@ -33,9 +33,9 @@ public interface RequirementRenderer<T extends Requirement>{
 		return (RequirementRenderer<T>)map.get(type.type());
 	}
 	
-	void render(MatrixStack matrices, int x, int y, T requirement, int ticks, float partialTicks, PlayerEntity player);
+	void render(PoseStack matrices, int x, int y, T requirement, int ticks, float partialTicks, Player player);
 	
-	List<ITextComponent> tooltip(T requirement, PlayerEntity player);
+	List<MutableComponent> tooltip(T requirement, Player player);
 	
 	default boolean shouldDrawTickOrCross(T requirement, int amount){
 		return amount == 1;

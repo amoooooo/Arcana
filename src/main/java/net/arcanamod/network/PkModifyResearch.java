@@ -1,13 +1,13 @@
 package net.arcanamod.network;
 
 import net.arcanamod.Arcana;
+import net.arcanamod.capabilities.Researcher;
 import net.arcanamod.systems.research.ResearchBooks;
 import net.arcanamod.systems.research.ResearchEntry;
-import net.arcanamod.capabilities.Researcher;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.network.NetworkEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -25,18 +25,18 @@ public class PkModifyResearch{
 		this.key = key;
 	}
 	
-	public static void encode(PkModifyResearch msg, PacketBuffer buffer){
-		buffer.writeEnumValue(msg.diff);
+	public static void encode(PkModifyResearch msg, FriendlyByteBuf buffer){
+		buffer.writeEnum(msg.diff);
 		buffer.writeResourceLocation(msg.key);
 	}
 	
-	public static PkModifyResearch decode(PacketBuffer buffer){
-		return new PkModifyResearch(buffer.readEnumValue(Diff.class), buffer.readResourceLocation());
+	public static PkModifyResearch decode(FriendlyByteBuf buffer){
+		return new PkModifyResearch(buffer.readEnum(Diff.class), buffer.readResourceLocation());
 	}
 	
 	public static void handle(PkModifyResearch msg, Supplier<NetworkEvent.Context> supplier){
 		supplier.get().enqueueWork(() -> {
-			PlayerEntity pe = Arcana.proxy.getPlayerOnClient();
+			Player pe = Arcana.proxy.getPlayerOnClient();
 			Researcher researcher = Researcher.getFrom(pe);
 			ResearchEntry entry = ResearchBooks.streamEntries().filter(e -> e.key().equals(msg.key)).findFirst().orElseGet(() -> {
 				LOGGER.error("An error occurred modifying player research progress on client: invalid research entry.");

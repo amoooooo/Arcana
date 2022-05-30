@@ -11,18 +11,20 @@ import net.arcanamod.systems.spell.modules.SpellModule;
 import net.arcanamod.systems.spell.modules.circle.DoubleModifierCircle;
 import net.arcanamod.systems.spell.modules.core.*;
 import net.arcanamod.util.Pair;
-import net.minecraft.crash.CrashReport;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.Hand;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.world.World;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import static net.arcanamod.util.Pair.of;
 
@@ -49,19 +51,19 @@ public class Spell implements ISpell {
 	 * Goes trough all spell modules and executes {@link ICast}.
 	 * @param spell Spell to run.
 	 * @param caster Player that uses the Spell.
-	 * @param sender {@link net.minecraft.item.ItemStack} that {@link net.minecraft.item.Item} extends {@link MagicDeviceItem}
+	 * @param sender {@link net.minecraft.world.item.ItemStack} that {@link net.minecraft.world.item.Item} extends {@link MagicDeviceItem}
 	 * @param action Spell use Action.
 	 */
-	public static void runSpell(Spell spell, World world, PlayerEntity caster, Object sender, ICast.Action action){
+	public static void runSpell(Spell spell, Level world, Player caster, Object sender, ICast.Action action){
 		// This method already loops through all of the modules, old loop wasn't necessary
 		Logic.runSpellModule(spell, world, spell.mainModule, caster, sender, action, new ArrayList<>(),new ArrayList<>());
 	}
 
-	public static void updateSpellStatusBar(PlayerEntity player){
-		if (player.getHeldItem(Hand.MAIN_HAND).getItem() instanceof MagicDeviceItem) {
-			if (MagicDeviceItem.getFocus(player.getHeldItem(Hand.MAIN_HAND)) != Focus.NO_FOCUS) {
-				if (MagicDeviceItem.getFocus(player.getHeldItem(Hand.MAIN_HAND)).getSpell(player.getHeldItem(Hand.MAIN_HAND))!=null) {
-					for (SpellModule module : MagicDeviceItem.getFocus(player.getHeldItem(Hand.MAIN_HAND)).getSpell(player.getHeldItem(Hand.MAIN_HAND)).mainModule.bound) {
+	public static void updateSpellStatusBar(Player player){
+		if (player.getItemInHand(InteractionHand.MAIN_HAND).getItem() instanceof MagicDeviceItem) {
+			if (MagicDeviceItem.getFocus(player.getItemInHand(InteractionHand.MAIN_HAND)) != Focus.NO_FOCUS) {
+				if (MagicDeviceItem.getFocus(player.getItemInHand(InteractionHand.MAIN_HAND)).getSpell(player.getItemInHand(InteractionHand.MAIN_HAND))!=null) {
+					for (SpellModule module : MagicDeviceItem.getFocus(player.getItemInHand(InteractionHand.MAIN_HAND)).getSpell(player.getItemInHand(InteractionHand.MAIN_HAND)).mainModule.bound) {
 						Logic.updateSpellStatusBarRecursive(module, player, new ArrayList<>());
 					}
 				}
@@ -79,9 +81,9 @@ public class Spell implements ISpell {
 		return Logic.getSpellCost(mainModule,new SpellCosts(0,0,0,0,0,0,0));
 	}
 
-	public Optional<ITextComponent> getName(CompoundNBT nbt){
+	public Optional<TextComponent> getName(CompoundTag nbt){
 		// TODO: add tooltip
-		return Optional.of(new StringTextComponent("//FIXME: NAME NOT IMPLEMENTED!!!")/*new TranslationTextComponent("spell." + getId().getNamespace() + "." + getId().getPath())*/);
+		return Optional.of(new TextComponent("//FIXME: NAME NOT IMPLEMENTED!!!")/*new TranslationTextComponent("spell." + getId().getNamespace() + "." + getId().getPath())*/);
 	}
 
 	public int getSpellColor() {
@@ -96,7 +98,7 @@ public class Spell implements ISpell {
 	 * @param compound Spell NBT
 	 * @return Deserialized Spell
 	 */
-	public static Spell fromNBT(CompoundNBT compound){
+	public static Spell fromNBT(CompoundTag compound){
 		Spell spell = new Spell(null);
 		if (compound.get("spell") != null) {
 			spell.mainModule = SpellModule.fromNBTFull(compound.getCompound("spell"), 0);
@@ -106,18 +108,18 @@ public class Spell implements ISpell {
 
 	/**
 	 * Spell to Spell NBT
-	 * @param compound Existing CompoundNBT or new.
+	 * @param compound Existing CompoundTag or new.
 	 * @return Serialized Spell
 	 */
-	public CompoundNBT toNBT(CompoundNBT compound){
+	public CompoundTag toNBT(CompoundTag compound){
 		if (mainModule != null) {
-			compound.put("spell", mainModule.toNBTFull(new CompoundNBT(), 0));
+			compound.put("spell", mainModule.toNBTFull(new CompoundTag(), 0));
 		}
 		return compound;
 	}
 
 	private static class Logic {
-		private static SpellModule updateSpellStatusBarRecursive(SpellModule toUnbound, PlayerEntity player,
+		private static SpellModule updateSpellStatusBarRecursive(SpellModule toUnbound, Player player,
 																 List<Pair<Aspect,Aspect>> castMethodsAspects) {
 			/*if (toUnbound.bound.size() > 0){
 				for (SpellModule module : toUnbound.bound) {
@@ -143,7 +145,7 @@ public class Spell implements ISpell {
 		/**
 		 * Run spell Recursion.
 		 */
-		private static SpellModule runSpellModule(Spell spell, World world, SpellModule toUnbound, PlayerEntity caster, Object sender, ICast.Action action,
+		private static SpellModule runSpellModule(Spell spell, Level world, SpellModule toUnbound, Player caster, Object sender, ICast.Action action,
 												  List<Pair<Aspect,Aspect>> castMethodsAspects, List<ICast> casts) {
 			SpellModule mod = null;
 			if (toUnbound == null) return reportNullSpell();

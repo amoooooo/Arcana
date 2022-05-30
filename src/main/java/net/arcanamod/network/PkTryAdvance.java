@@ -1,12 +1,12 @@
 package net.arcanamod.network;
 
+import net.arcanamod.capabilities.Researcher;
 import net.arcanamod.systems.research.ResearchBooks;
 import net.arcanamod.systems.research.ResearchEntry;
-import net.arcanamod.capabilities.Researcher;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.network.NetworkEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -22,17 +22,17 @@ public class PkTryAdvance{
 		this.key = key;
 	}
 	
-	public static void encode(PkTryAdvance msg, PacketBuffer buffer){
+	public static void encode(PkTryAdvance msg, FriendlyByteBuf buffer){
 		buffer.writeResourceLocation(msg.key);
 	}
 	
-	public static PkTryAdvance decode(PacketBuffer buffer){
+	public static PkTryAdvance decode(FriendlyByteBuf buffer){
 		return new PkTryAdvance(buffer.readResourceLocation());
 	}
 	
 	public static void handle(PkTryAdvance msg, Supplier<NetworkEvent.Context> supplier){
 		supplier.get().enqueueWork(() -> {
-			ServerPlayerEntity sender = supplier.get().getSender();
+			ServerPlayer sender = supplier.get().getSender();
 			Researcher researcher = Researcher.getFrom(sender);
 			ResearchEntry entry = ResearchBooks.streamEntries().filter(e -> e.key().equals(msg.key)).findFirst().orElseGet(() -> {
 				LOGGER.error("An error occurred trying to advance research progress on server: invalid research entry.");

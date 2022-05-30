@@ -1,12 +1,15 @@
 package net.arcanamod.client.gui;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.arcanamod.Arcana;
 import net.arcanamod.aspects.Aspect;
 import net.arcanamod.aspects.AspectUtils;
 import net.arcanamod.aspects.Aspects;
+import net.arcanamod.blocks.tiles.FociForgeBlockEntity;
 import net.arcanamod.blocks.tiles.FociForgeTileEntity;
 import net.arcanamod.containers.FociForgeContainer;
+import net.arcanamod.containers.FociForgeMenu;
 import net.arcanamod.containers.slots.AspectSlot;
 import net.arcanamod.items.ArcanaItems;
 import net.arcanamod.items.attachment.FocusItem;
@@ -14,16 +17,19 @@ import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.world.entity.player.Inventory;
 
 import java.util.List;
 
 import static net.arcanamod.containers.FociForgeContainer.ASPECT_H_COUNT;
 import static net.arcanamod.containers.FociForgeContainer.ASPECT_V_COUNT;
 
-public class FociForgeScreen extends AspectContainerScreen<FociForgeContainer> {
+public class FociForgeScreen extends AspectContainerScreen<FociForgeMenu> {
 	public static final int WIDTH = 397;
 	public static final int HEIGHT = 283;
 
@@ -47,12 +53,12 @@ public class FociForgeScreen extends AspectContainerScreen<FociForgeContainer> {
 
 	public static final ResourceLocation BG = new ResourceLocation(Arcana.MODID, "textures/gui/container/gui_fociforge.png");
 
-	FociForgeTileEntity te;
+	FociForgeBlockEntity te;
 	float aspectScroll = 0, fociScroll = 0;
 	boolean isScrollingAspect = false, isScrollingFoci = false, spellHasFocus = false;
 	TextFieldWidget searchWidget;
 
-	public FociForgeScreen(FociForgeContainer screenContainer, PlayerInventory inv, ITextComponent titleIn){
+	public FociForgeScreen(FociForgeMenu screenContainer, Inventory inv, TextComponent titleIn){
 		super(screenContainer, inv, titleIn);
 		this.te = screenContainer.te;
 		this.aspectContainer = screenContainer;
@@ -165,7 +171,7 @@ public class FociForgeScreen extends AspectContainerScreen<FociForgeContainer> {
 	}
 
 	@Override
-	protected void renderHoveredTooltip(MatrixStack matrices, int mouseX, int mouseY) {
+	protected void renderHoveredTooltip(PoseStack matrices, int mouseX, int mouseY) {
 		for (AspectSlot slot : aspectContainer.getAspectSlots()) {
 			if (slot.getInventory().get() != null && slot.visible) {
 				if (isMouseOverSlot(mouseX, mouseY, slot)) {

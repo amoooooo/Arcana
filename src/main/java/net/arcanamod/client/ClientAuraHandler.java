@@ -5,8 +5,10 @@ import net.arcanamod.network.PkRequestNodeSync;
 import net.arcanamod.world.ClientAuraView;
 import net.arcanamod.world.AuraView;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.world.ChunkEvent;
@@ -49,7 +51,7 @@ public class ClientAuraHandler{
 	@SubscribeEvent
 	public static void tickEndClient(TickEvent.ClientTickEvent event){
 		if(event.phase == TickEvent.Phase.END){
-			ClientWorld world = Minecraft.getInstance().world;
+			ClientLevel world = Minecraft.getInstance().level;
 			
 			if(world != null){
 				AuraView view = new ClientAuraView(world);

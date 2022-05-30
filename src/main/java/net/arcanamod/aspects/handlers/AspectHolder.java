@@ -3,13 +3,13 @@ package net.arcanamod.aspects.handlers;
 import net.arcanamod.aspects.Aspect;
 import net.arcanamod.aspects.AspectStack;
 import net.arcanamod.aspects.Aspects;
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraftforge.common.util.INBTSerializable;
 
 import java.util.List;
 import java.util.function.Consumer;
 
-public interface AspectHolder extends INBTSerializable<CompoundNBT>{
+public interface AspectHolder extends INBTSerializable<CompoundTag>{
 	
 	// Returns the stored stack.
 	AspectStack getStack();
@@ -110,6 +110,6 @@ public interface AspectHolder extends INBTSerializable<CompoundNBT>{
 	}
 	
 	// Serialization
-	CompoundNBT serializeNBT();
-	void deserializeNBT(CompoundNBT data);
+	CompoundTag serializeNBT();
+	void deserializeNBT(CompoundTag data);
 }

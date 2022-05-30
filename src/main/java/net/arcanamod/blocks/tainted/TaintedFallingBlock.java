@@ -1,25 +1,22 @@
 package net.arcanamod.blocks.tainted;
 
-import mcp.MethodsReturnNonnullByDefault;
 import net.arcanamod.Arcana;
-import net.arcanamod.systems.taint.Taint;
 import net.arcanamod.blocks.bases.GroupedBlock;
 import net.arcanamod.capabilities.TaintTrackable;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.FallingBlock;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.BlockItemUseContext;
-import net.minecraft.item.ItemGroup;
-import net.minecraft.state.BooleanProperty;
-import net.minecraft.state.StateContainer;
-import net.minecraft.util.Direction;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.IWorld;
-import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
+import net.arcanamod.systems.taint.Taint;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.FallingBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -32,46 +29,46 @@ public class TaintedFallingBlock extends FallingBlock implements GroupedBlock{
 	public static final BooleanProperty UNTAINTED = Taint.UNTAINTED;
 	
 	public TaintedFallingBlock(Block parent){
-		super(Properties.from(parent));
+		super(Properties.copy(parent));
 		Taint.addTaintMapping(parent, this);
 	}
 	
 	// Thankfully, no falling block has block properties so we don't have to do delegation stuff.
 	// If we want to make a tainted anvil, we need to reimplement stuff, sadly.
 	
-	public boolean ticksRandomly(BlockState state){
+	public boolean isRandomlyTicking(BlockState state){
 		return true;
 	}
 	
-	protected void fillStateContainer(StateContainer.Builder<Block, BlockState> builder){
-		super.fillStateContainer(builder);
+	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder){
+		super.createBlockStateDefinition(builder);
 		builder.add(UNTAINTED);
 	}
 	
-	public BlockState getStateForPlacement(BlockItemUseContext context){
+	public BlockState getStateForPlacement(BlockPlaceContext context){
 		BlockState placement = super.getStateForPlacement(context);
-		return placement != null ? placement.with(UNTAINTED, true) : null;
+		return placement != null ? placement.setValue(UNTAINTED, true) : null;
 	}
 	
-	public void tick(BlockState state, ServerWorld world, BlockPos pos, Random random){
+	public void tick(BlockState state, ServerLevel world, BlockPos pos, Random random){
 		super.tick(state, world, pos, random);
 		Taint.tickTaintedBlock(state, world, pos, random);
 	}
 	
 	@Nullable
 	@Override
-	public ItemGroup getGroup(){
+	public CreativeModeTab getGroup(){
 		return Arcana.TAINT;
 	}
 	
 	@SuppressWarnings("deprecation")
-	public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity){
-		super.onEntityCollision(state, world, pos, entity);
+	public void entityInside(BlockState state, Level world, BlockPos pos, Entity entity){
+		super.entityInside(state, world, pos, entity);
 		startTracking(entity);
 	}
 	
-	public void onEntityWalk(World world, BlockPos pos, Entity entity){
-		super.onEntityWalk(world, pos, entity);
+	public void stepOn(Level world, BlockPos pos, BlockState state, Entity entity){
+		super.stepOn(world, pos, state, entity);
 		startTracking(entity);
 	}
 	

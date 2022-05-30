@@ -1,13 +1,13 @@
 package net.arcanamod;
 
-import net.minecraft.item.ItemGroup;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nonnull;
 import java.util.function.Supplier;
 
-public class SupplierItemGroup extends ItemGroup{
+public class SupplierItemGroup extends CreativeModeTab {
 
 	private Supplier<ItemStack> iconSupplier;
 	private ResourceLocation backgroundImage;
@@ -38,7 +38,7 @@ public class SupplierItemGroup extends ItemGroup{
 	}
 	
 	@Nonnull
-	public ItemStack createIcon(){
+	public ItemStack makeIcon(){
 		return iconSupplier.get();
 	}
 }

@@ -1,9 +1,9 @@
 package net.arcanamod.systems.research;
 
 import net.arcanamod.systems.research.impls.*;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.LinkedHashMap;
@@ -17,7 +17,7 @@ public abstract class Requirement{
 	////////// static stuff
 	
 	private static Map<ResourceLocation, Function<List<String>, Requirement>> factories = new LinkedHashMap<>();
-	private static Map<ResourceLocation, Function<CompoundNBT, Requirement>> deserializers = new LinkedHashMap<>();
+	private static Map<ResourceLocation, Function<CompoundTag, Requirement>> deserializers = new LinkedHashMap<>();
 	
 	public static Requirement makeRequirement(ResourceLocation type, List<String> content){
 		if(factories.get(type) != null)
@@ -26,9 +26,9 @@ public abstract class Requirement{
 			return null;
 	}
 	
-	public static Requirement deserialize(CompoundNBT passData){
+	public static Requirement deserialize(CompoundTag passData){
 		ResourceLocation type = new ResourceLocation(passData.getString("type"));
-		CompoundNBT data = passData.getCompound("data");
+		CompoundTag data = passData.getCompound("data");
 		int amount = passData.getInt("amount");
 		if(deserializers.get(type) != null){
 			Requirement requirement = deserializers.get(type).apply(data);
@@ -64,12 +64,12 @@ public abstract class Requirement{
 		return amount;
 	}
 	
-	public CompoundNBT getPassData(){
-		CompoundNBT nbt = new CompoundNBT();
-		nbt.putString("type", type().toString());
-		nbt.put("data", data());
-		nbt.putInt("amount", getAmount());
-		return nbt;
+	public CompoundTag getPassData(){
+		CompoundTag Tag = new CompoundTag();
+		Tag.putString("type", type().toString());
+		Tag.put("data", data());
+		Tag.putInt("amount", getAmount());
+		return Tag;
 	}
 	
 	public Requirement setAmount(int amount){
@@ -77,15 +77,15 @@ public abstract class Requirement{
 		return this;
 	}
 	
-	public abstract boolean satisfied(PlayerEntity player);
+	public abstract boolean satisfied(Player player);
 	
-	public abstract void take(PlayerEntity player);
+	public abstract void take(Player player);
 	
 	public abstract ResourceLocation type();
 	
-	public abstract CompoundNBT data();
+	public abstract CompoundTag data();
 	
-	public boolean onClick(ResearchEntry entry, PlayerEntity player){
+	public boolean onClick(ResearchEntry entry, Player player){
 		return false;
 	}
 	

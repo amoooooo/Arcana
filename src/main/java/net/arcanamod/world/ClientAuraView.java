@@ -2,12 +2,12 @@ package net.arcanamod.world;
 
 import net.arcanamod.capabilities.AuraChunk;
 import net.arcanamod.client.ClientAuraHandler;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.ChunkStatus;
-import net.minecraft.world.chunk.IChunk;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.ChunkStatus;
+import net.minecraft.world.level.chunk.LevelChunk;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -17,18 +17,18 @@ import java.util.Collection;
  */
 public class ClientAuraView implements AuraView{
 	
-	ClientWorld world;
+	ClientLevel world;
 	
-	public ClientAuraView(ClientWorld world){
+	public ClientAuraView(ClientLevel world){
 		this.world = world;
 	}
 	
 	public Collection<Node> getAllNodes(){
 		Collection<Node> allNodes = new ArrayList<>();
 		for(ChunkPos chunkPos : ClientAuraHandler.CLIENT_LOADED_CHUNKS){
-			IChunk chunk = world.getChunk(chunkPos.x, chunkPos.z, ChunkStatus.FULL, false);
-			if(chunk instanceof Chunk){ // also a nonnull check
-				AuraChunk nc = AuraChunk.getFrom((Chunk)chunk);
+			ChunkAccess chunk = world.getChunk(chunkPos.x, chunkPos.z, ChunkStatus.FULL, false);
+			if(chunk instanceof LevelChunk){ // also a nonnull check
+				AuraChunk nc = AuraChunk.getFrom((LevelChunk)chunk);
 				if(nc != null)
 					allNodes.addAll(nc.getNodes());
 			}
@@ -36,7 +36,7 @@ public class ClientAuraView implements AuraView{
 		return allNodes;
 	}
 	
-	public World getWorld(){
+	public Level getWorld(){
 		return world;
 	}
 }

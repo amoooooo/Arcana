@@ -1,13 +1,11 @@
 package net.arcanamod.util;
 
+import com.mojang.math.Vector3d;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.arcanamod.aspects.Aspect;
-import net.arcanamod.aspects.AspectUtils;
 import net.arcanamod.aspects.Aspects;
-import net.arcanamod.client.render.particles.NodeParticleData;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.UUID;
 

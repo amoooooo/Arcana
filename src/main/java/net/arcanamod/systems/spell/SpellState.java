@@ -2,8 +2,8 @@ package net.arcanamod.systems.spell;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.arcanamod.Arcana;
 import net.arcanamod.aspects.Aspect;
 import net.arcanamod.aspects.Aspects;
@@ -15,19 +15,20 @@ import net.arcanamod.systems.spell.modules.SpellModule;
 import net.arcanamod.systems.spell.modules.core.Connector;
 import net.arcanamod.util.Pair;
 import net.minecraft.client.Minecraft;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.INBT;
-import net.minecraft.nbt.ListNBT;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import org.lwjgl.opengl.GL11;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.awt.*;
 import java.lang.reflect.InvocationTargetException;
-import java.util.*;
 import java.util.List;
+import java.util.Queue;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -63,7 +64,7 @@ public class SpellState {
 
     public void replaceSpell(Spell spell) {
         // ez pz copy function
-        currentSpell = Spell.fromNBT(spell.toNBT(new CompoundNBT()));
+        currentSpell = Spell.fromNBT(spell.toNBT(new CompoundTag()));
         spellModified = false;
     }
 
@@ -196,21 +197,21 @@ public class SpellState {
                                 }
                                 // lower module
                             } else if (floating.containsKey(activeModule)) {
-                                success = lower(activeModule.x, activeModule.y, spellX, spellY, Minecraft.getInstance().player.getUniqueID(), true);
+                                success = lower(activeModule.x, activeModule.y, spellX, spellY, Minecraft.getInstance().player.getUUID(), true);
                                 if (success) {
                                     activeModule = null;
                                 }
                             }
                             // raise module
                         } else if (under != null) {
-                            success = raise(spellX, spellY, Minecraft.getInstance().player.getUniqueID(), true);
+                            success = raise(spellX, spellY, Minecraft.getInstance().player.getUUID(), true);
                             if (success) {
                                 activeModule = under;
                             }
                         }
                     } else if (activeModule != null && floating.containsKey(activeModule)) {
                         // delete module
-                        success = delete(activeModule.x, activeModule.y, Minecraft.getInstance().player.getUniqueID(),true);
+                        success = delete(activeModule.x, activeModule.y, Minecraft.getInstance().player.getUUID(),true);
                         if (success) {
                             activeModule = null;
                         }
@@ -230,7 +231,7 @@ public class SpellState {
                         success = true;
                     } else {
                         // lower lifted module
-                        success = lower(activeModule.x, activeModule.y, activeModule.x, activeModule.y, Minecraft.getInstance().player.getUniqueID(), true);
+                        success = lower(activeModule.x, activeModule.y, activeModule.x, activeModule.y, Minecraft.getInstance().player.getUUID(), true);
                         if (success) {
                             activeModule = null;
                         }
@@ -373,7 +374,7 @@ public class SpellState {
         SpellModule newModule = moduleFromIndex(moduleIndex);
         if (newModule != null && canPlace(x, y, newModule)) {
             if (isRemote) {
-                Connection.sendFociForgeAction(Minecraft.getInstance().player.openContainer.windowId,
+                Connection.sendFociForgeAction(Minecraft.getInstance().player.containerMenu.containerId,
                         PkFociForgeAction.Type.PLACE,
                         x, y, moduleIndex, -1,
                         sequence,
@@ -413,7 +414,7 @@ public class SpellState {
             if (isRemote) {
                 // send action to server
                 // manage client-side state
-                Connection.sendFociForgeAction(Minecraft.getInstance().player.openContainer.windowId,
+                Connection.sendFociForgeAction(Minecraft.getInstance().player.containerMenu.containerId,
                         PkFociForgeAction.Type.RAISE,
                         x, y, -1, -1,
                         sequence,
@@ -434,7 +435,7 @@ public class SpellState {
             if (isRemote) {
                 // send action to server
                 // manage client-side state
-                Connection.sendFociForgeAction(Minecraft.getInstance().player.openContainer.windowId,
+                Connection.sendFociForgeAction(Minecraft.getInstance().player.containerMenu.containerId,
                         PkFociForgeAction.Type.LOWER,
                         from_x, from_y, to_x, to_y,
                         sequence,
@@ -471,7 +472,7 @@ public class SpellState {
             if (isRemote) {
                 // send action to server
                 // manage client-side state
-                Connection.sendFociForgeAction(Minecraft.getInstance().player.openContainer.windowId,
+                Connection.sendFociForgeAction(Minecraft.getInstance().player.containerMenu.containerId,
                         PkFociForgeAction.Type.CONNECT,
                         from_x, from_y, to_x, to_y,
                         sequence,
@@ -499,7 +500,7 @@ public class SpellState {
             if (isRemote) {
                 // send action to server
                 // manage client-side state
-                Connection.sendFociForgeAction(Minecraft.getInstance().player.openContainer.windowId,
+                Connection.sendFociForgeAction(Minecraft.getInstance().player.containerMenu.containerId,
                         PkFociForgeAction.Type.DELETE,
                         x, y, -1, -1,
                         sequence,
@@ -536,7 +537,7 @@ public class SpellState {
             if (isRemote) {
                 // send action to server
                 // manage client-side state
-                Connection.sendFociForgeAction(Minecraft.getInstance().player.openContainer.windowId,
+                Connection.sendFociForgeAction(Minecraft.getInstance().player.containerMenu.containerId,
                         PkFociForgeAction.Type.ASSIGN,
                         x, y, -1 ,-1,
                         sequence,
@@ -552,7 +553,7 @@ public class SpellState {
     }
 
     public void exitGui() {
-        UUID client = Arcana.proxy.getPlayerOnClient().getUniqueID();
+        UUID client = Arcana.proxy.getPlayerOnClient().getUUID();
         if (floating.containsValue(client)) {
             SpellModule raised = floating.inverse().get(client);
             lower(raised.x, raised.y, raised.x, raised.y, client, true);
@@ -560,19 +561,21 @@ public class SpellState {
         activeModule = null;
     }
 
-    public void render(MatrixStack stack, int guiLeft, int guiTop, int spellLeft, int spellTop, int width, int height, int mouseX, int mouseY) {
+    public void render(PoseStack stack, int guiLeft, int guiTop, int spellLeft, int spellTop, int width, int height, int mouseX, int mouseY) {
         Minecraft mc = Minecraft.getInstance();
-        mc.getTextureManager().bindTexture(SPELL_RESOURCES);
+        mc.getTextureManager().bindForSetup(SPELL_RESOURCES);
         RenderSystem.enableBlend();
 
         // Scissors test: In this section, rendering outside this window does nothing.
-        double gui_scale = mc.getMainWindow().getGuiScaleFactor();
+        double gui_scale = mc.getWindow().getGuiScale();
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         // TODO: De-magic '85' because I don't know what it is
         GL11.glScissor((int)(gui_scale * spellLeft), (int)(gui_scale * (spellTop + 85)), (int)(gui_scale * width), (int)(gui_scale * height));
-        RenderSystem.pushMatrix();
+//        RenderSystem.pushMatrix();
+        stack.pushPose();
         // move 0, 0 to spell window
-        RenderSystem.translatef(spellLeft, spellTop, 0);
+//        RenderSystem.translatef(spellLeft, spellTop, 0);
+        stack.translate(spellLeft, spellTop, 0);
         // draw background
         int bg_texX = (currentSpell == null ? 16 : 0);
         float start_x = getNegativeMod16(this.x);
@@ -586,7 +589,8 @@ public class SpellState {
 
         if (currentSpell != null) {
             // render starting at board location
-            RenderSystem.translatef(x, y, 0);
+//            RenderSystem.translatef(x, y, 0);
+            stack.translate(x, y, 0);
 
             Queue<Pair<SpellModule, SpellModule>> moduleQueue = new LinkedList<>();
             Queue<Pair<SpellModule, SpellModule>> connectQueue = new LinkedList<>();
@@ -621,39 +625,45 @@ public class SpellState {
             }
 
             while(!connectQueue.isEmpty()) {
-                mc.getTextureManager().bindTexture(SPELL_RESOURCES);
+                mc.getTextureManager().bindForSetup(SPELL_RESOURCES);
                 Pair<SpellModule, SpellModule> next = connectQueue.remove();
                 SpellModule root = next.getFirst();
                 SpellModule base = next.getSecond();
 
-                RenderSystem.pushMatrix();
+//                RenderSystem.pushMatrix();
+                stack.pushPose();
                 Point rootPoint = root.getConnectionRenderStart();
                 Point basePoint = base.getConnectionRenderEnd();
                 double distance = Math.sqrt(Math.pow(rootPoint.x - basePoint.x, 2) + Math.pow(rootPoint.y - basePoint.y, 2));
                 // render connector with 0,0 at root
-                RenderSystem.translatef(rootPoint.x, rootPoint.y, 0);
+//                RenderSystem.translatef(rootPoint.x, rootPoint.y, 0);
+                stack.translate(root.x, root.y, 0);
                 // sprite rendered from (0,0) to (x, 0), so we rotate the matrix to draw accordingly
                 float angle = (float)(Math.atan2(basePoint.y - rootPoint.y, basePoint.x - rootPoint.x) * 180 / Math.PI);
-                RenderSystem.rotatef(angle, 0, 0, 1);
+//                RenderSystem.rotatef(angle, 0, 0, 1);
+//                stack. ???
                 ClientUiUtil.drawTexturedModalRect(stack, -8, -8, 176, 16, 16, 16);
                 ClientUiUtil.drawTexturedModalRect(stack, (int)distance - 8, -8, 208, 16, 16, 16);
                 if (distance > 16) {
-                    RenderSystem.translatef(8,0,0);
-                    RenderSystem.scalef(((float)distance - 16.0f) / 16.0f,1,  1);
+//                    RenderSystem.translatef(8,0,0);
+                    stack.translate(8, 0, 0);
+//                    RenderSystem.scalef(((float)distance - 16.0f) / 16.0f,1,  1);
+                    stack.scale(((float)distance - 16.0f) / 16.0f,1,  1);
                     ClientUiUtil.drawTexturedModalRect(stack, 0, -8, 192, 16, 16, 16);
                 }
-                RenderSystem.popMatrix();
+//                RenderSystem.popMatrix();
+                stack.popPose();
             }
 
             while(!renderQueue.isEmpty()) {
-                mc.getTextureManager().bindTexture(SPELL_RESOURCES);
+                mc.getTextureManager().bindForSetup(SPELL_RESOURCES);
                 SpellModule next = renderQueue.remove();
                 if (!floating.containsKey(next)) {
                     next.renderInMinigame(mouseX, mouseY, mc.getItemRenderer(), false, stack);
                 } else { // current player is floating module
-                    RenderSystem.color4f(1.0f, 1.0f, 1.0f, .75f);
+                    RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, .75f);
                     next.renderInMinigame(mouseX, mouseY, mc.getItemRenderer(), true, stack);
-                    RenderSystem.color4f(1.0f, 1.0f, 1.0f, 1.0f);
+                    RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
                 }
             }
         }
@@ -662,16 +672,17 @@ public class SpellState {
             activeModule.renderInMinigame(mouseX, mouseY, mc.getItemRenderer(), (!activeModule.unplaced), stack);
         }
 
-        RenderSystem.popMatrix();
+//        RenderSystem.popMatrix();
+        stack.popPose();
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
 
-        mc.getTextureManager().bindTexture(SPELL_RESOURCES);
+        mc.getTextureManager().bindForSetup(SPELL_RESOURCES);
         // Render selected module under mouse cursor
         if (activeModule != null) {
             activeModule.renderUnderMouse(mouseX, mouseY, mc.getItemRenderer(), (!activeModule.unplaced), stack);
         }
 
-        mc.getTextureManager().bindTexture(FociForgeScreen.BG);
+        mc.getTextureManager().bindForSetup(FociForgeScreen.BG);
         if (currentSpell != null) {
             for (int i = 0; i < 9; i++) {
                 ClientUiUtil.drawModalRectWithCustomSizedTexture(stack,
@@ -682,7 +693,7 @@ public class SpellState {
         }
     }
 
-    public static SpellState fromNBT(CompoundNBT compound) {
+    public static SpellState fromNBT(CompoundTag compound) {
         SpellState state = new SpellState();
         if (compound.contains("spell")) {
             state.currentSpell = Spell.fromNBT(compound);
@@ -692,19 +703,19 @@ public class SpellState {
             }
         }
         if (compound.contains("isolated")) {
-            ListNBT isolatedList = (ListNBT)compound.get("isolated");
-            for (INBT iso : isolatedList) {
-                state.isolated.add(SpellModule.fromNBTFull((CompoundNBT)iso, 0));
+            ListTag isolatedList = (ListTag)compound.get("isolated");
+            for (Tag iso : isolatedList) {
+                state.isolated.add(SpellModule.fromNBTFull((CompoundTag)iso, 0));
             }
         }
         if (compound.contains("floating")) {
-            ListNBT floatingList = (ListNBT)compound.get("isolated");
-            for (INBT flo : floatingList) {
-                CompoundNBT floGet = (CompoundNBT)flo;
+            ListTag floatingList = (ListTag)compound.get("isolated");
+            for (Tag flo : floatingList) {
+                CompoundTag floGet = (CompoundTag) flo;
                 if (floGet.contains("x") && floGet.contains("y") && floGet.contains("id")) {
                     int x = floGet.getInt("x");
                     int y = floGet.getInt("y");
-                    UUID id = floGet.getUniqueId("id");
+                    UUID id = floGet.getUUID("id");
                     SpellModule found = state.getModuleAt(x, y);
                     if (found != null) {
                         state.floating.put(found, id);
@@ -718,17 +729,17 @@ public class SpellState {
         return state;
     }
 
-    public CompoundNBT toNBT(CompoundNBT compound) {
-        ListNBT isolatedNBT = new ListNBT();
+    public CompoundTag toNBT(CompoundTag compound) {
+        ListTag isolatedNBT = new ListTag();
         for (SpellModule iso : isolated) {
-            isolatedNBT.add(iso.toNBTFull(new CompoundNBT(), 0));
+            isolatedNBT.add(iso.toNBTFull(new CompoundTag(), 0));
         }
-        ListNBT floatingNBT = new ListNBT();
+        ListTag floatingNBT = new ListTag();
         for (Map.Entry<SpellModule, UUID> flo : floating.entrySet()) {
-            CompoundNBT floNBT = new CompoundNBT();
+            CompoundTag floNBT = new CompoundTag();
             floNBT.putInt("x", flo.getKey().x);
             floNBT.putInt("y", flo.getKey().y);
-            floNBT.putUniqueId("id", flo.getValue());
+            floNBT.putUUID("id", flo.getValue());
             floatingNBT.add(floNBT);
         }
         if (currentSpell != null) {

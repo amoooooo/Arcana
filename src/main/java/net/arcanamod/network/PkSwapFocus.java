@@ -1,13 +1,12 @@
 package net.arcanamod.network;
 
 import net.arcanamod.items.MagicDeviceItem;
-import net.arcanamod.items.WandItem;
 import net.arcanamod.items.attachment.FocusItem;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.network.PacketBuffer;
-import net.minecraft.util.Hand;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.network.NetworkEvent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,49 +14,49 @@ import java.util.function.Supplier;
 
 public class PkSwapFocus{
 	
-	Hand wandHand;
+	InteractionHand wandHand;
 	int newFocusIndex;
 	
-	public PkSwapFocus(Hand wandHand, int newFocusIndex){
+	public PkSwapFocus(InteractionHand wandHand, int newFocusIndex){
 		this.wandHand = wandHand;
 		this.newFocusIndex = newFocusIndex;
 	}
 	
-	public static void encode(PkSwapFocus msg, PacketBuffer buffer){
-		buffer.writeEnumValue(msg.wandHand);
+	public static void encode(PkSwapFocus msg, FriendlyByteBuf buffer){
+		buffer.writeEnum(msg.wandHand);
 		buffer.writeVarInt(msg.newFocusIndex);
 	}
 	
-	public static PkSwapFocus decode(PacketBuffer buffer){
-		return new PkSwapFocus(buffer.readEnumValue(Hand.class), buffer.readVarInt());
+	public static PkSwapFocus decode(FriendlyByteBuf buffer){
+		return new PkSwapFocus(buffer.readEnum(InteractionHand.class), buffer.readVarInt());
 	}
 	
 	public static void handle(PkSwapFocus msg, Supplier<NetworkEvent.Context> supplier){
 		supplier.get().enqueueWork(() -> {
-			ServerPlayerEntity spe = supplier.get().getSender();
-			ItemStack wandStack = spe.getHeldItem(msg.wandHand);
+			ServerPlayer spe = supplier.get().getSender();
+			ItemStack wandStack = spe.getItemInHand(msg.wandHand);
 			// Give player the old focus
 			if(msg.newFocusIndex >= 0){
 				// Set the wand focus of the wand
 				List<ItemStack> foci = getAllFociStacks(spe);
-				MagicDeviceItem.getFocusStack(wandStack).ifPresent(spe.inventory::addItemStackToInventory);
+				MagicDeviceItem.getFocusStack(wandStack).ifPresent(spe.getInventory()::add);
 				ItemStack focus = foci.get(msg.newFocusIndex);
 				MagicDeviceItem.setFocusFromStack(wandStack, focus);
 				// Remove the stack from the inventory
-				spe.inventory.func_234564_a_(stack -> stack == focus, 1, spe.container.func_234641_j_());
+				spe.getInventory().clearOrCountMatchingItems(stack -> stack == focus, 1, spe.getInventory());
 			}else{
-				MagicDeviceItem.getFocusStack(wandStack).ifPresent(spe.inventory::addItemStackToInventory);
+				MagicDeviceItem.getFocusStack(wandStack).ifPresent(spe.getInventory()::add);
 				MagicDeviceItem.setFocusFromStack(wandStack, ItemStack.EMPTY);
 			}
 		});
 		supplier.get().setPacketHandled(true);
 	}
 	
-	private static List<ItemStack> getAllFociStacks(ServerPlayerEntity spe){
+	private static List<ItemStack> getAllFociStacks(ServerPlayer spe){
 		//TODO: focus pouch?
 		List<ItemStack> foci = new ArrayList<>();
-		for(int i = 0; i < spe.inventory.getSizeInventory(); i++){
-			ItemStack stack = spe.inventory.getStackInSlot(i);
+		for(int i = 0; i < spe.getInventory().getContainerSize(); i++){
+			ItemStack stack = spe.getInventory().getItem(i);
 			if(stack.getItem() instanceof FocusItem)
 				foci.add(stack);
 		}

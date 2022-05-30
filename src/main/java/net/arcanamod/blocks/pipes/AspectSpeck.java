@@ -1,8 +1,8 @@
 package net.arcanamod.blocks.pipes;
 
 import net.arcanamod.aspects.AspectStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.Direction;
+import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
 
 import javax.annotation.Nonnull;
 
@@ -23,17 +23,17 @@ public class AspectSpeck{
 	}
 	
 	@Nonnull
-	public CompoundNBT toNbt(){
-		CompoundNBT tag = new CompoundNBT();
+	public CompoundTag toNbt(){
+		CompoundTag tag = new CompoundTag();
 		tag.put("payload", payload.toNbt());
 		tag.putFloat("speed", speed);
-		tag.putInt("direction", direction.getIndex());
+		tag.putInt("direction", direction.get2DDataValue());
 		tag.putFloat("pos", pos);
 		return tag;
 	}
 	
 	@Nonnull
-	public static AspectSpeck fromNbt(@Nonnull CompoundNBT tag){
-		return new AspectSpeck(AspectStack.fromNbt(tag.getCompound("payload")), tag.getFloat("speed"), Direction.byIndex(tag.getInt("direction")), tag.getFloat("pos"));
+	public static AspectSpeck fromNbt(@Nonnull CompoundTag tag){
+		return new AspectSpeck(AspectStack.fromNbt(tag.getCompound("payload")), tag.getFloat("speed"), Direction.from2DDataValue(tag.getInt("direction")), tag.getFloat("pos"));
 	}
 }

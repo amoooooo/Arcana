@@ -1,29 +1,33 @@
 package net.arcanamod.blocks;
 
-import mcp.MethodsReturnNonnullByDefault;
 import net.arcanamod.Arcana;
 import net.arcanamod.ArcanaSounds;
 import net.arcanamod.blocks.bases.GroupedBlock;
 import net.arcanamod.capabilities.TaintTrackable;
 import net.arcanamod.systems.taint.Taint;
-import net.minecraft.block.*;
-import net.minecraft.block.material.Material;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.item.BlockItemUseContext;
-import net.minecraft.item.ItemGroup;
-import net.minecraft.state.BooleanProperty;
-import net.minecraft.state.StateContainer;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.FluidTags;
-import net.minecraft.util.Direction;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.text.IFormattableTextComponent;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.IBlockReader;
-import net.minecraft.world.IWorldReader;
-import net.minecraft.world.World;
-import net.minecraft.world.lighting.LightEngine;
-import net.minecraft.world.server.ServerWorld;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.SnowLayerBlock;
+import net.minecraft.world.level.block.SpreadingSnowyDirtBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.lighting.BlockLightEngine;
 import net.minecraftforge.common.FarmlandWaterManager;
 import net.minecraftforge.common.IPlantable;
 
@@ -31,8 +35,8 @@ import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Random;
 
-import static net.minecraft.block.FarmlandBlock.MOISTURE;
-import static net.minecraft.block.SnowyDirtBlock.SNOWY;
+import static net.minecraft.world.level.block.FarmBlock.MOISTURE;
+import static net.minecraft.world.level.block.SnowyDirtBlock.SNOWY;
 import static net.minecraftforge.common.ForgeHooks.onFarmlandTrample;
 
 @ParametersAreNonnullByDefault
@@ -47,57 +51,57 @@ public class TaintedBlock extends DelegatingBlock implements GroupedBlock{
 		Taint.addTaintMapping(block, this);
 	}
 	
-	public IFormattableTextComponent getTranslatedName(){
-		return new TranslationTextComponent("arcana.status.tainted", super.getTranslatedName());
+	public MutableComponent getTranslatedName(){
+		return new TranslatableComponent("arcana.status.tainted", super.getTranslatedName());
 	}
 	
-	public boolean ticksRandomly(BlockState state){
+	public boolean isRandomlyTicking(BlockState state){
 		return true;
 	}
 	
-	protected void fillStateContainer(StateContainer.Builder<Block, BlockState> builder){
+	protected void fillStateContainer(StateDefinition.Builder<Block, BlockState> builder){
 		super.fillStateContainer(builder);
 		builder.add(UNTAINTED);
 	}
 	
-	public BlockState getStateForPlacement(BlockItemUseContext context){
+	public BlockState getStateForPlacement(BlockPlaceContext context){
 		BlockState placement = super.getStateForPlacement(context);
-		return placement != null ? placement.with(UNTAINTED, true) : null;
+		return placement != null ? placement.setValue(UNTAINTED, true) : null;
 	}
 	
-	public void randomTick(BlockState state, ServerWorld world, BlockPos pos, Random random){
+	public void randomTick(BlockState state, ServerLevel world, BlockPos pos, Random random){
 		// Tainted Farmland yet again
 		boolean continueTick = true;
 		if(parentBlock == Blocks.FARMLAND){
-			if(!state.isValidPosition(world, pos)){
-				world.setBlockState(pos, nudgeEntitiesWithNewState(world.getBlockState(pos), ArcanaBlocks.TAINTED_SOIL.get().getDefaultState().with(UNTAINTED, state.get(UNTAINTED)), world, pos));
+			if(!state.canSurvive(world, pos)){
+				world.setBlockAndUpdate(pos, pushEntitiesUp(world.getBlockState(pos), ArcanaBlocks.TAINTED_SOIL.get().defaultBlockState().setValue(UNTAINTED, state.getValue(UNTAINTED)), world, pos));
 				continueTick = false;
-			}else if(!hasWater(world, pos) && !world.isRainingAt(pos.up()))
-				if(state.get(MOISTURE) == 0)
+			}else if(!hasWater(world, pos) && !world.isRainingAt(pos.above()))
+				if(state.getValue(MOISTURE) == 0)
 					if(!hasCrops(world, pos)){
-						world.setBlockState(pos, nudgeEntitiesWithNewState(world.getBlockState(pos), ArcanaBlocks.TAINTED_SOIL.get().getDefaultState().with(UNTAINTED, state.get(UNTAINTED)), world, pos));
+						world.setBlockAndUpdate(pos, pushEntitiesUp(world.getBlockState(pos), ArcanaBlocks.TAINTED_SOIL.get().defaultBlockState().setValue(UNTAINTED, state.getValue(UNTAINTED)), world, pos));
 						continueTick = false;
 					}
 		}
 		// Tainted grass path decays into tainted soil
-		if(parentBlock == Blocks.GRASS_PATH){
-			if(!state.isValidPosition(world, pos))
-				world.setBlockState(pos, nudgeEntitiesWithNewState(world.getBlockState(pos), ArcanaBlocks.TAINTED_SOIL.get().getDefaultState().with(UNTAINTED, state.get(UNTAINTED)), world, pos));
+		if(parentBlock == Blocks.DIRT_PATH){
+			if(!state.canSurvive(world, pos))
+				world.setBlockAndUpdate(pos, pushEntitiesUp(world.getBlockState(pos), ArcanaBlocks.TAINTED_SOIL.get().defaultBlockState().setValue(UNTAINTED, state.getValue(UNTAINTED)), world, pos));
 			continueTick = false;
 		}
 		// And tainted grass decays into tainted soil, and spreads.
 		// Should also cover mycelium.
-		if(parentBlock instanceof SpreadableSnowyDirtBlock){
+		if(parentBlock instanceof SpreadingSnowyDirtBlock){
 			if(!isLocationUncovered(state, world, pos)){
 				if(!world.isAreaLoaded(pos, 3))
 					return; // Forge: prevent loading unloaded chunks when checking neighbor's light and spreading
-				world.setBlockState(pos, ArcanaBlocks.TAINTED_SOIL.get().getDefaultState().with(UNTAINTED, state.get(UNTAINTED)));
-			}else if(world.getLight(pos.up()) >= 9){
-				BlockState blockstate = getDefaultState();
+				world.setBlockAndUpdate(pos, ArcanaBlocks.TAINTED_SOIL.get().defaultBlockState().setValue(UNTAINTED, state.getValue(UNTAINTED)));
+			}else if(world.getLightEmission(pos.above()) >= 9){
+				BlockState blockstate = defaultBlockState();
 				for(int i = 0; i < 4; ++i){
-					BlockPos blockpos = pos.add(random.nextInt(3) - 1, random.nextInt(5) - 3, random.nextInt(3) - 1);
+					BlockPos blockpos = pos.offset(random.nextInt(3) - 1, random.nextInt(5) - 3, random.nextInt(3) - 1);
 					if(world.getBlockState(blockpos).getBlock() == ArcanaBlocks.TAINTED_SOIL.get() && isLocationValidForGrass(blockstate, world, blockpos))
-						world.setBlockState(blockpos, blockstate.with(SNOWY, world.getBlockState(blockpos.up()).getBlock() == Blocks.SNOW).with(UNTAINTED, state.get(UNTAINTED)));
+						world.setBlockAndUpdate(blockpos, blockstate.setValue(SNOWY, world.getBlockState(blockpos.above()).getBlock() == Blocks.SNOW).setValue(UNTAINTED, state.getValue(UNTAINTED)));
 				}
 			}
 			continueTick = false;
@@ -108,7 +112,7 @@ public class TaintedBlock extends DelegatingBlock implements GroupedBlock{
 	}
 	
 	// Tainted Cactus and Sugar Cane
-	public boolean canSustainPlant(BlockState state, IBlockReader world, BlockPos pos, Direction facing, IPlantable plantable){
+	public boolean canSustainPlant(BlockState state, BlockGetter world, BlockPos pos, Direction facing, IPlantable plantable){
 		// BlockState plant = plantable.getPlant(world, pos.offset(facing));
 		return super.canSustainPlant(state, world, pos, facing, plantable);
 				/*|| ((parentBlock == Blocks.GRASS_BLOCK || parentBlock == Blocks.DIRT || parentBlock == Blocks.COARSE_DIRT || parentBlock == Blocks.PODZOL || parentBlock == Blocks.FARMLAND)
@@ -120,30 +124,30 @@ public class TaintedBlock extends DelegatingBlock implements GroupedBlock{
 	}
 	
 	// Make farmland turn to tainted soil
-	public void onFallenUpon(World world, BlockPos pos, Entity entity, float fallDistance){
+	public void fallOn(Level world, BlockState state, BlockPos pos, Entity entity, float fallDistance){
 		if(parentBlock == Blocks.FARMLAND){
 			// Forge: Move logic to Entity#canTrample
-			if(!world.isRemote && onFarmlandTrample(world, pos, Blocks.DIRT.getDefaultState(), fallDistance, entity))
-				world.setBlockState(pos, nudgeEntitiesWithNewState(world.getBlockState(pos), ArcanaBlocks.TAINTED_SOIL.get().getDefaultState(), world, pos));
-			entity.onLivingFall(fallDistance, 1.0F);
+			if(!world.isClientSide && onFarmlandTrample(world, pos, Blocks.DIRT.defaultBlockState(), fallDistance, entity))
+				world.setBlockAndUpdate(pos, pushEntitiesUp(world.getBlockState(pos), ArcanaBlocks.TAINTED_SOIL.get().defaultBlockState(), world, pos));
+			entity.causeFallDamage(fallDistance, 1.0F, DamageSource.FALL);
 		}else
-			super.onFallenUpon(world, pos, entity, fallDistance);
+			super.fallOn(world, state, pos, entity, fallDistance);
 	}
 	
 	@Nullable
 	@Override
-	public ItemGroup getGroup(){
+	public CreativeModeTab getGroup(){
 		return Arcana.TAINT;
 	}
 	
 	@SuppressWarnings("deprecation")
-	public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity){
-		super.onEntityCollision(state, world, pos, entity);
+	public void entityInside(BlockState state, Level world, BlockPos pos, Entity entity){
+		super.entityInside(state, world, pos, entity);
 		startTracking(entity);
 	}
 	
-	public void onEntityWalk(World world, BlockPos pos, Entity entity){
-		super.onEntityWalk(world, pos, entity);
+	public void stepOn(Level world, BlockPos pos, BlockState state, Entity entity){
+		super.stepOn(world, pos, state, entity);
 		startTracking(entity);
 	}
 	
@@ -158,32 +162,32 @@ public class TaintedBlock extends DelegatingBlock implements GroupedBlock{
 	
 	// Private stuff in FarmlandBlock
 	// TODO: AT this
-	private boolean hasCrops(IBlockReader worldIn, BlockPos pos){
-		BlockState state = worldIn.getBlockState(pos.up());
+	private boolean hasCrops(LevelReader worldIn, BlockPos pos){
+		BlockState state = worldIn.getBlockState(pos.above());
 		return state.getBlock() instanceof IPlantable && canSustainPlant(state, worldIn, pos, Direction.UP, (IPlantable)state.getBlock());
 	}
 	
-	private static boolean hasWater(IWorldReader worldIn, BlockPos pos){
-		for(BlockPos blockpos : BlockPos.getAllInBoxMutable(pos.add(-4, 0, -4), pos.add(4, 1, 4)))
-			if(worldIn.getFluidState(blockpos).isTagged(FluidTags.WATER))
+	private static boolean hasWater(LevelReader worldIn, BlockPos pos){
+		for(BlockPos blockpos : BlockPos.betweenClosed(pos.offset(-4, 0, -4), pos.offset(4, 1, 4)))
+			if(worldIn.getFluidState(blockpos).is(FluidTags.WATER))
 				return true;
 		return FarmlandWaterManager.hasBlockWaterTicket(worldIn, pos);
 	}
 	
 	// Private stuff in SpreadableSnowyDirtBlock
-	private static boolean isLocationUncovered(BlockState state, IWorldReader world, BlockPos pos){
-		BlockPos blockpos = pos.up();
+	private static boolean isLocationUncovered(BlockState state, LevelReader world, BlockPos pos){
+		BlockPos blockpos = pos.above();
 		BlockState blockstate = world.getBlockState(blockpos);
-		if(blockstate.getBlock() == Blocks.SNOW && blockstate.get(SnowBlock.LAYERS) == 1)
+		if(blockstate.getBlock() == Blocks.SNOW && blockstate.getValue(SnowLayerBlock.LAYERS) == 1)
 			return true;
 		else{
-			int i = LightEngine.func_215613_a(world, state, pos, blockstate, blockpos, Direction.UP, blockstate.getOpacity(world, blockpos));
+			int i = BlockLightEngine.getLightBlockInto(world, state, pos, blockstate, blockpos, Direction.UP, blockstate.getLightBlock(world, blockpos));
 			return i < world.getMaxLightLevel();
 		}
 	}
 	
-	private static boolean isLocationValidForGrass(BlockState state, IWorldReader world, BlockPos pos){
-		BlockPos blockpos = pos.up();
-		return isLocationUncovered(state, world, pos) && !world.getFluidState(blockpos).isTagged(FluidTags.WATER);
+	private static boolean isLocationValidForGrass(BlockState state, LevelReader world, BlockPos pos){
+		BlockPos blockpos = pos.above();
+		return isLocationUncovered(state, world, pos) && !world.getFluidState(blockpos).is(FluidTags.WATER);
 	}
 }

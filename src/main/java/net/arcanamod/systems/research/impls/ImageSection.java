@@ -1,8 +1,8 @@
 package net.arcanamod.systems.research.impls;
 
 import net.arcanamod.systems.research.EntrySection;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 
 public class ImageSection extends EntrySection{
 	
@@ -26,8 +26,8 @@ public class ImageSection extends EntrySection{
 		return image;
 	}
 	
-	public CompoundNBT getData(){
-		CompoundNBT tag = new CompoundNBT();
+	public CompoundTag getData(){
+		CompoundTag tag = new CompoundTag();
 		tag.putString("image", getImage().toString());
 		return tag;
 	}

@@ -6,23 +6,23 @@ import net.arcanamod.aspects.AspectUtils;
 import net.arcanamod.aspects.Aspects;
 import net.arcanamod.systems.spell.SpellValues;
 import net.arcanamod.systems.spell.casts.Cast;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.loot.LootContext;
-import net.minecraft.loot.LootParameters;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.Hand;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.vector.Vector3d;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.loot.LootContext;
+import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
+import net.minecraft.world.phys.Vec3;
 
 public class ExchangeCast extends Cast {
 
@@ -50,33 +50,34 @@ public class ExchangeCast extends Cast {
 	}
 
 	@Override
-	public ActionResultType useOnEntity(PlayerEntity caster, Entity targetEntity) {
-		caster.sendStatusMessage(new TranslationTextComponent("status.arcana.invalid_spell"), true);
-		return ActionResultType.FAIL;
+	public InteractionResult useOnEntity(Player caster, Entity targetEntity) {
+		caster.displayClientMessage(new TranslatableComponent("status.arcana.invalid_spell"), true);
+		return InteractionResult.FAIL;
 	}
 
 	@Override
-	public ActionResultType useOnBlock(PlayerEntity caster, World world, BlockPos blockTarget) {
-		if (caster.world.isRemote) return ActionResultType.SUCCESS;
-		BlockState blockToDestroy = caster.world.getBlockState(blockTarget);
-		if (blockToDestroy.getBlock().canHarvestBlock(blockToDestroy, caster.world, blockTarget, caster) && blockToDestroy.getHarvestLevel() <= getMiningLevel()) {
-			ItemStack held = caster.getHeldItem(Hand.OFF_HAND);
-			if (!held.isEmpty() && Block.getBlockFromItem(held.getItem()) != Blocks.AIR) {
-				for (ItemStack stack : caster.world.getBlockState(blockTarget).getDrops(new LootContext.Builder((ServerWorld) caster.world)
-						.withParameter(LootParameters.ORIGIN, Vector3d.copyCentered(blockTarget)).withParameter(LootParameters.TOOL, new ItemStack(getMiningLevel() >= 3 ? Items.DIAMOND_PICKAXE : Items.IRON_PICKAXE)))) {
-					caster.addItemStackToInventory(stack);
+	public InteractionResult useOnBlock(Player caster, Level world, BlockPos blockTarget) {
+		if (caster.level.isClientSide) return InteractionResult.SUCCESS;
+		BlockState blockToDestroy = caster.level.getBlockState(blockTarget);
+		if (blockToDestroy.getBlock().canHarvestBlock(blockToDestroy, caster.level, blockTarget, caster) && blockToDestroy.canHarvestBlock(world, blockTarget, caster)) {
+			ItemStack held = caster.getItemInHand(InteractionHand.OFF_HAND);
+			if (!held.isEmpty() && Block.byItem(held.getItem()) != Blocks.AIR) {
+				for (ItemStack stack : caster.level.getBlockState(blockTarget).getDrops(new LootContext.Builder((ServerLevel) caster.level)
+						.withParameter(LootContextParams.ORIGIN, Vec3.atCenterOf((blockTarget)))
+						.withParameter(LootContextParams.TOOL, new ItemStack(getMiningLevel() >= 3 ? Items.DIAMOND_PICKAXE : Items.IRON_PICKAXE)))) {
+					caster.addItem(stack);
 				}
-				caster.world.setBlockState(blockTarget, Block.getBlockFromItem(held.getItem()).getDefaultState());
+				caster.level.setBlockAndUpdate(blockTarget, Block.byItem(held.getItem()).defaultBlockState());
 				held.shrink(1);
-				blockToDestroy.updateNeighbours(caster.world, blockTarget, 3);
+				blockToDestroy.updateNeighbourShapes(caster.level, blockTarget, 3);
 			}
 		}
-		return ActionResultType.SUCCESS;
+		return InteractionResult.SUCCESS;
 	}
 
 	@Override
-	public ActionResultType useOnPlayer(PlayerEntity playerTarget) {
-		playerTarget.sendStatusMessage(new TranslationTextComponent("status.arcana.invalid_spell"), true);
-		return ActionResultType.FAIL;
+	public InteractionResult useOnPlayer(Player playerTarget) {
+		playerTarget.displayClientMessage(new TranslatableComponent("status.arcana.invalid_spell"), true);
+		return InteractionResult.FAIL;
 	}
 }

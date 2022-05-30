@@ -2,7 +2,7 @@ package net.arcanamod.aspects.handlers;
 
 import net.arcanamod.aspects.Aspect;
 import net.arcanamod.aspects.AspectStack;
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.common.util.INBTSerializable;
 import net.minecraftforge.common.util.LazyOptional;
@@ -14,7 +14,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public interface AspectHandler extends INBTSerializable<CompoundNBT>{
+public interface AspectHandler extends INBTSerializable<CompoundTag>{
 	
 	/** Returns the list of holders. */
 	List<AspectHolder> getHolders();
@@ -182,8 +182,8 @@ public interface AspectHandler extends INBTSerializable<CompoundNBT>{
 	}
 	
 	// Serialization
-	CompoundNBT serializeNBT();
-	void deserializeNBT(CompoundNBT data);
+	CompoundTag serializeNBT();
+	void deserializeNBT(CompoundTag data);
 	
 	// Statics
 	static LazyOptional<AspectHandler> getOptional(@Nullable ICapabilityProvider holder){

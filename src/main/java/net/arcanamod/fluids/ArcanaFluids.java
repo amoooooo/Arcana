@@ -9,13 +9,22 @@ import net.minecraft.fluid.Fluid;
 import net.minecraft.item.BucketItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.item.BucketItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.material.FlowingFluid;
+import net.minecraft.world.level.material.Fluid;
+import net.minecraft.world.level.material.Material;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fluids.FluidAttributes;
 import net.minecraftforge.fluids.ForgeFlowingFluid;
 import net.minecraftforge.fml.RegistryObject;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegistryObject;
 
 import static net.arcanamod.ArcanaVariables.arcLoc;
 import static net.arcanamod.blocks.ArcanaBlocks.BLOCKS;
@@ -38,11 +47,11 @@ public class ArcanaFluids {
 			new ForgeFlowingFluid.Flowing(ArcanaFluids.taint_fluid_properties)
 	);
 
-	public static RegistryObject<FlowingFluidBlock> TAINT_FLUID_BLOCK = BLOCKS.register("tainted_goo", () ->
-			new TaintFluid(TAINT_FLUID, Block.Properties.create(Material.WATER).doesNotBlockMovement().hardnessAndResistance(100.0F).noDrops())
+	public static RegistryObject<FlowingFluid> TAINT_FLUID_BLOCK = BLOCKS.register("tainted_goo", () ->
+			new TaintFluid(TAINT_FLUID, Block.Properties.of(Material.WATER).noCollission().strength(100.0F).noDrops())
 	);
 	public static RegistryObject<Item> TAINT_FLUID_BUCKET = ITEMS.register("tainted_goo_bucket", () ->
-			new BucketItem(TAINT_FLUID, new Item.Properties().containerItem(Items.BUCKET).maxStackSize(1).group(Arcana.TAINT))
+			new BucketItem(TAINT_FLUID, new Item.Properties().craftRemainder(Items.BUCKET).stacksTo(1).tab(Arcana.TAINT))
 	);
 
 	public static final ForgeFlowingFluid.Properties taint_fluid_properties =

@@ -1,41 +1,41 @@
 package net.arcanamod.items;
 
-import mcp.MethodsReturnNonnullByDefault;
 import net.arcanamod.entities.TaintBottleEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.stats.Stats;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.SoundCategory;
-import net.minecraft.util.SoundEvents;
-import net.minecraft.world.World;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
 @ParametersAreNonnullByDefault
 @MethodsReturnNonnullByDefault
-public class TaintBottleItem extends Item{
+public class TaintBottleItem extends Item {
 	
 	public TaintBottleItem(Properties properties){
 		super(properties);
 	}
 	
-	public ActionResult<ItemStack> onItemRightClick(World world, PlayerEntity player, Hand hand){
-		world.playSound(null, player.getPosX(), player.getPosY(), player.getPosZ(), SoundEvents.ENTITY_SPLASH_POTION_THROW, SoundCategory.PLAYERS, 0.5F, 0.4F / (random.nextFloat() * 0.4F + 0.8F));
+	public InteractionResultHolder<ItemStack> use(Level world, Player player, InteractionHand hand){
+		world.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.SPLASH_POTION_THROW, SoundSource.PLAYERS, 0.5F, 0.4F / (world.random.nextFloat() * 0.4F + 0.8F));
 		
-		if(!world.isRemote()){
+		if(!world.isClientSide()){
 			TaintBottleEntity entity = new TaintBottleEntity(player, world);
-			entity.shoot(player.getLookVec().getX(), player.getLookVec().getY(), player.getLookVec().getZ(), .5f, 1);
-			world.addEntity(entity);
+			entity.shoot(player.getEyePosition(1.0F).x(), player.getEyePosition(1.0F).y(), player.getEyePosition(1.0F).z(), .5f, 1);
+			world.addFreshEntity(entity);
 		}
 		
-		ItemStack itemstack = player.getHeldItem(hand);
-		player.addStat(Stats.ITEM_USED.get(this));
-		if(!player.abilities.isCreativeMode)
+		ItemStack itemstack = player.getItemInHand(hand);
+		player.awardStat(Stats.ITEM_USED.get(this));
+		if(!player.getAbilities().instabuild)
 			itemstack.shrink(1);
 		
-		return ActionResult.resultSuccess(itemstack);
+		return InteractionResultHolder.success(itemstack);
 	}
 }

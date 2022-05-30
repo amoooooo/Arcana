@@ -1,22 +1,22 @@
 package net.arcanamod.items;
 
-import mcp.MethodsReturnNonnullByDefault;
 import net.arcanamod.Arcana;
 import net.arcanamod.aspects.*;
 import net.arcanamod.aspects.handlers.AspectBattery;
 import net.arcanamod.aspects.handlers.AspectHandler;
 import net.arcanamod.aspects.handlers.AspectHandlerCapability;
 import net.arcanamod.aspects.handlers.AspectHolder;
-import net.minecraft.client.util.ITooltipFlag;
-import net.minecraft.item.*;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.NonNullList;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.World;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.NonNullList;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.item.*;
+import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.common.util.LazyOptional;
 
@@ -30,21 +30,20 @@ import static net.arcanamod.ArcanaSounds.playPhialCorkpopSound;
 @MethodsReturnNonnullByDefault
 @ParametersAreNonnullByDefault
 public class PhialItem extends Item implements IOverrideAspects {
-	
-	public PhialItem(){
-		super(new Properties().group(Arcana.ITEMS));
+	public PhialItem() {
+		super(new Properties().tab(Arcana.ITEMS));
 	}
 	
 	@SuppressWarnings("ConstantConditions")
-	public ActionResultType onItemUse(ItemUseContext context){
-		BlockPos pos = context.getPos();
-		TileEntity tile = context.getWorld().getTileEntity(pos);
+	public InteractionResult useOn(UseOnContext context){
+		BlockPos pos = context.getClickedPos();
+		BlockEntity tile = context.getLevel().getBlockEntity(pos);
 		if(tile != null){
 			LazyOptional<AspectHandler> cap = tile.getCapability(AspectHandlerCapability.ASPECT_HANDLER);
 			if(cap.isPresent()){
 				//noinspection ConstantConditions
 				AspectHandler tileHandle = cap.orElse(null);
-				AspectHolder myHandle = AspectHandler.getFrom(context.getItem()).getHolder(0);
+				AspectHolder myHandle = AspectHandler.getFrom(context.getItemInHand()).getHolder(0);
 				if(myHandle.getStack().getAmount() <= 0){
 					// drain from block
 					// pick first holder with >0 vis
@@ -60,10 +59,10 @@ public class PhialItem extends Item implements IOverrideAspects {
 							if(capedItemStack.getTag() == null)
 								capedItemStack.setTag(capedItemStack.getShareTag());
 							// take an empty phial and give the filled one
-							context.getItem().shrink(1);
-							context.getPlayer().inventory.addItemStackToInventory(capedItemStack); //player.addItemStackToInventory gives sound and player.inventory.addItemStackToInventory not.
+							context.getItemInHand().shrink(1);
+							context.getPlayer().getInventory().add(capedItemStack); //player.addItemStackToInventory gives sound and player.inventory.addItemStackToInventory not.
 							holder.drain(min, false);
-							return ActionResultType.SUCCESS;
+							return InteractionResult.SUCCESS;
 						}
 				}else{
 					// insert to block
@@ -73,69 +72,69 @@ public class PhialItem extends Item implements IOverrideAspects {
 							playPhialCorkpopSound(context.getPlayer());
 							if(inserted != 0){
 								ItemStack new_phial = new ItemStack(this, 1);
-								AspectHolder old_holder = AspectHandler.getFrom(context.getItem()).getHolder(0);
+								AspectHolder old_holder = AspectHandler.getFrom(context.getItemInHand()).getHolder(0);
 								AspectHolder new_holder = AspectHandler.getFrom(new_phial).getHolder(0);
 								new_holder.insert(new AspectStack(old_holder.getStack().getAspect(), inserted), false);
 								new_phial.setTag(new_phial.getShareTag());
 								if (!context.getPlayer().isCreative())
-									context.getPlayer().addItemStackToInventory(new_phial);
+									context.getPlayer().addItem(new_phial);
 							}else
 								if (!context.getPlayer().isCreative())
-									context.getPlayer().inventory.addItemStackToInventory(new ItemStack(ArcanaItems.PHIAL.get())); //player.addItemStackToInventory gives sound and player.inventory.addItemStackToInventory not.
-							context.getItem().shrink(1);
-							return ActionResultType.SUCCESS;
+									context.getPlayer().getInventory().add(new ItemStack(ArcanaItems.PHIAL.get())); //player.addItemStackToInventory gives sound and player.inventory.addItemStackToInventory not.
+							context.getItemInHand().shrink(1);
+							return InteractionResult.SUCCESS;
 						}
 				}
 			}
 		}
-		return super.onItemUse(context);
+		return super.useOn(context);
 	}
 	
 	@Nullable
 	@Override
-	public ICapabilityProvider initCapabilities(ItemStack stack, @Nullable CompoundNBT nbt){
+	public ICapabilityProvider initCapabilities(ItemStack stack, @Nullable CompoundTag nbt) {
 		AspectBattery battery = new AspectBattery(/*1, 8*/);
 		battery.initHolders(8, 1);
 		return battery;
 	}
 	
 	@Override
-	public ITextComponent getDisplayName(ItemStack stack){
+	public Component getName(ItemStack stack) {
 		AspectHandler aspectHandler = AspectHandler.getFrom(stack);
 		if(aspectHandler != null && aspectHandler.getHolder(0) != null){
 			if(!aspectHandler.getHolder(0).getStack().isEmpty()){
 				String aspectName = AspectUtils.getLocalizedAspectDisplayName(aspectHandler.getHolder(0).getStack().getAspect());
-				return new TranslationTextComponent("item.arcana.phial", aspectName).mergeStyle(Rarity.RARE.color);
+				return new TranslatableComponent("item.arcana.phial", aspectName).withStyle(Rarity.RARE.color);
 			}
 		}
-		return new TranslationTextComponent("item.arcana.empty_phial");
+		return new TranslatableComponent("item.arcana.empty_phial");
 	}
 	
 	@Override
-	public void addInformation(ItemStack stack, @Nullable World worldIn, List<ITextComponent> tooltip, ITooltipFlag flagIn){
+	public void appendHoverText(ItemStack stack, @Nullable Level worldIn, List<Component> tooltip, TooltipFlag flagIn) {
 		AspectBattery vis = (AspectBattery)AspectHandler.getFrom(stack);
 		if(vis != null){
 			if(vis.getHolder(0) != null){
 				if(!vis.getHolder(0).getStack().isEmpty()){
 					AspectStack aspectStack = vis.getHolder(0).getStack();
-					tooltip.add(new TranslationTextComponent("tooltip.contains_aspect",
+					tooltip.add(new TranslatableComponent("tooltip.contains_aspect",
 							aspectStack.getAspect().name().toLowerCase().substring(0, 1).toUpperCase() + aspectStack.getAspect().name().toLowerCase().substring(1), (int)aspectStack.getAmount()));
 				}
 			}
 		}
-		super.addInformation(stack, worldIn, tooltip, flagIn);
+		super.appendHoverText(stack, worldIn, tooltip, flagIn);
 	}
 	
 	@Nullable
 	@Override
-	public CompoundNBT getShareTag(ItemStack stack){
+	public CompoundTag getShareTag(ItemStack stack) {
 		AspectHandler vis = AspectHandler.getFrom(stack);
 		if(vis != null){
 			if(vis.getHolder(0) != null){
 				Aspect aspect = vis.getHolder(0).getStack().getAspect();
 				float amount = vis.getHolder(0).getStack().getAmount();
 				if(aspect != null && amount != 0){
-					CompoundNBT compoundNBT = new CompoundNBT();
+					CompoundTag compoundNBT = new CompoundTag();
 					compoundNBT.putInt("id", aspect.getId() - 1);
 					compoundNBT.putFloat("amount", amount);
 					return compoundNBT;
@@ -146,23 +145,23 @@ public class PhialItem extends Item implements IOverrideAspects {
 	}
 	
 	@Override
-	public void readShareTag(ItemStack stack, @Nullable CompoundNBT nbt){
-		if(nbt != null){
+	public void readShareTag(ItemStack stack, @Nullable CompoundTag nbt) {
+		if(nbt != null) {
 			AspectHandler cap = AspectHandler.getFrom(stack);
 			if(cap != null)
 				cap.getHolder(0).insert(new AspectStack(Aspects.getAll().get(nbt.getInt("id") - 1), nbt.getInt("amount")), false);
 		}
 	}
 	
-	public void fillItemGroup(ItemGroup group, NonNullList<ItemStack> items){
-		if(isInGroup(group)){
-			for(Aspect aspect : Aspects.getAll()){
+	public void fillItemCategory(CreativeModeTab group, NonNullList<ItemStack> items) {
+		if(allowdedIn(group)){
+			for(Aspect aspect : Aspects.getAll()) {
 				items.add(withAspect(aspect));
 			}
 		}
 	}
 	
-	private ItemStack withAspect(Aspect aspect){
+	private ItemStack withAspect(Aspect aspect) {
 		ItemStack stack = new ItemStack(this);
 		AspectHandler cap = AspectHandler.getFrom(stack);
 		if(cap != null)
@@ -172,14 +171,14 @@ public class PhialItem extends Item implements IOverrideAspects {
 	}
 	
 	@Override
-	public List<AspectStack> getAspectStacks(ItemStack stack){
+	public List<AspectStack> getAspectStacks(ItemStack stack) {
 		AspectHolder myHolder = AspectHandler.getFrom(stack).getHolder(0);
 		if(myHolder == null || myHolder.getStack().isEmpty())
 			return Collections.singletonList(new AspectStack(Aspects.EMPTY));
 		return Collections.singletonList(myHolder.getStack());
 	}
 	
-	public static Aspect getAspect(ItemStack stack){
+	public static Aspect getAspect(ItemStack stack) {
 		AspectHolder myHolder = AspectHandler.getFrom(stack).getHolder(0);
 		return myHolder.getStack().getAspect();
 	}

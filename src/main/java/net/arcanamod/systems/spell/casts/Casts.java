@@ -3,7 +3,7 @@ package net.arcanamod.systems.spell.casts;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import net.arcanamod.systems.spell.casts.impl.*;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 
 public class Casts {
 	public static final BiMap<ResourceLocation, ICast> castMap = HashBiMap.create();

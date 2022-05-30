@@ -1,24 +1,22 @@
 package net.arcanamod.systems.spell;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.MoverType;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.MoverType;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public interface Homeable {
     static <T extends Entity & Homeable> void startHoming(T toHome) {
         int s = 15; // size of box
         if (toHome.getHomeables().size() > 0){
-            AxisAlignedBB box = new AxisAlignedBB(
-                    toHome.getPosX()-s,toHome.getPosY()-s,toHome.getPosZ()-s,
-                    toHome.getPosX()+s,toHome.getPosY()+s,toHome.getPosZ()+s
+            AABB box = new AABB(
+                    toHome.getX()-s,toHome.getY()-s,toHome.getZ()-s,
+                    toHome.getX()+s,toHome.getY()+s,toHome.getZ()+s
             );
             for (Class<? extends Entity> homeTarget : toHome.getHomeables()){
-                List<Entity> entitiesWithinBox = toHome.world.getEntitiesWithinAABB((Class<? extends Entity>) homeTarget,box,Entity::isAlive);
+                List<? extends Entity> entitiesWithinBox = toHome.level.getEntitiesOfClass((Class<? extends Entity>) homeTarget,box,Entity::isAlive);
                 if (entitiesWithinBox.size() > 0){
                     for (Entity entity : entitiesWithinBox){
                         toHome.move(MoverType.PLAYER,getVecDistance(entity, toHome,10f));
@@ -28,12 +26,12 @@ public interface Homeable {
         }
     }
 
-    // JAVA 11 pls
-    /*private */static <E extends Entity> Vector3d getVecDistance(E homing, E entity, float pDM){
-        return new Vector3d(
-                (homing.getPosX()-entity.getPosX())/pDM,
+    // Vector3d -> Vec3
+    private static <E extends Entity> Vec3 getVecDistance(E homing, E entity, float pDM){
+        return new Vec3(
+                (homing.getX()-entity.getX())/pDM,
                 0,
-                (homing.getPosZ()-entity.getPosZ())/pDM
+                (homing.getZ()-entity.getZ())/pDM
         );
     }
 

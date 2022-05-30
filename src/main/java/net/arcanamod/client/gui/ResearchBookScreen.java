@@ -3,6 +3,7 @@ package net.arcanamod.client.gui;
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.arcanamod.Arcana;
 import net.arcanamod.ArcanaConfig;
 import net.arcanamod.capabilities.Researcher;
@@ -13,6 +14,7 @@ import net.arcanamod.systems.research.*;
 import net.arcanamod.util.Pair;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.client.renderer.IRenderTypeBuffer;
 import net.minecraft.client.renderer.RenderHelper;
@@ -21,11 +23,15 @@ import net.minecraft.client.resources.I18n;
 import net.minecraft.client.util.InputMappings;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.vector.Matrix4f;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.fml.client.gui.GuiUtils;
 import org.lwjgl.opengl.GL11;
 
@@ -71,12 +77,12 @@ public class ResearchBookScreen extends Screen {
 	static boolean showZoom = false;
 
 	public ResearchBookScreen(ResearchBook book, Screen parentScreen, ItemStack sender){
-		super(new StringTextComponent(""));
+		super(new TextComponent(""));
 		this.sender = sender;
 		this.parentScreen = parentScreen;
 		this.book = book;
 		texture = new ResourceLocation(book.getKey().getNamespace(), "textures/gui/research/" + book.getPrefix() + SUFFIX_RESIZABLE);
-		PlayerEntity player = Minecraft.getInstance().player;
+		Player player = Minecraft.getInstance().player;
 		categories = book.getCategories().stream().filter(category -> {
 			// has no requirement
 			if(category.requirement() == null)
@@ -99,7 +105,7 @@ public class ResearchBookScreen extends Screen {
 		return ((height / 2f) * (1 / zoom)) - (yPan / 2f);
 	}
 	
-	public void render(@Nonnull MatrixStack stack, int mouseX, int mouseY, float partialTicks){
+	public void render(@Nonnull PoseStack stack, int mouseX, int mouseY, float partialTicks){
 		if(ArcanaConfig.BOOK_SMOOTH_ZOOM.get()){
 			float diff = targetZoom - zoom;
 			zoom = zoom + Math.min(partialTicks * (2 / 3f), 1) * diff;
@@ -111,7 +117,7 @@ public class ResearchBookScreen extends Screen {
 		
 		// draw stuff
 		// 224x196 viewing area
-		int scale = (int)getMinecraft().getMainWindow().getGuiScaleFactor();
+		int scale = (int)getMinecraft().getWindow().getGuiScale();
 		int x = (width - getFrameWidth()) / 2 + 16, y = (height - getFrameHeight()) / 2 + 17;
 		int visibleWidth = getFrameWidth() - 32, visibleHeight = getFrameHeight() - 34;
 		GL11.glScissor(x * scale, y * scale, visibleWidth * scale, visibleHeight * scale);

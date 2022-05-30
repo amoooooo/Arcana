@@ -1,10 +1,10 @@
 package net.arcanamod;
 
-import net.minecraft.block.SoundType;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.SoundCategory;
-import net.minecraft.util.SoundEvent;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.common.util.ForgeSoundType;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.ObjectHolder;
 import net.minecraftforge.registries.ObjectHolderRegistry;
@@ -28,35 +28,34 @@ import java.util.Random;
 public class ArcanaSounds {
 
 	// SoundTypes
-	public static SoundType JAR = new SoundType(0.6F, 1.0F,Impl.jar_break,Impl.jar_step,Impl.jar_place,Impl.jar_break,Impl.jar_step);
-	public static SoundType TAINT = new SoundType(0.6F, 1.4F,Impl.taint_break,Impl.taint_step,Impl.taint_place,Impl.taint_break,Impl.taint_step);
-	public static SoundType TAINT_STONE = new SoundType(0.6F, 1.4F,Impl.taint_stone_break,Impl.taint_stone_step,Impl.taint_stone_place,Impl.taint_stone_break,Impl.taint_stone_break);
-	public static SoundType CRYSTAL = new SoundType(0.6F, 1.0F,Impl.crystal_break,Impl.crystal_place,Impl.crystal_place,Impl.crystal_break,Impl.crystal_place);
+	public static ForgeSoundType JAR = new ForgeSoundType(0.6F, 1.0F, () -> Impl.jar_break, () -> Impl.jar_step, () -> Impl.jar_place, () -> Impl.jar_break, () -> Impl.jar_step);
+	public static ForgeSoundType TAINT = new ForgeSoundType(0.6F, 1.4F, () -> Impl.taint_break, () -> Impl.taint_step, () -> Impl.taint_place, () -> Impl.taint_break, () -> Impl.taint_step);
+	public static ForgeSoundType TAINT_STONE = new ForgeSoundType(0.6F, 1.4F, () -> Impl.taint_stone_break, () -> Impl.taint_stone_step, () -> Impl.taint_stone_place, () -> Impl.taint_stone_break, () -> Impl.taint_stone_break);
+	public static ForgeSoundType CRYSTAL = new ForgeSoundType(0.6F, 1.0F, () -> Impl.crystal_break, () -> Impl.crystal_place, () -> Impl.crystal_place, () -> Impl.crystal_break, () -> Impl.crystal_place);
 
 	// SoundEvents
-	@SuppressWarnings("ConstantConditions")
-	public static void playPhialshelfSlideSound(PlayerEntity playerEntity){
-		playSound(playerEntity, ArcanaSounds.Impl.phialshelf_slide, SoundCategory.BLOCKS,0.4f,1.2f);
+	public static void playPhialshelfSlideSound(Player player){
+		playSound(player, ArcanaSounds.Impl.phialshelf_slide, SoundSource.BLOCKS,0.4f,1.2f);
 	}
 
 	@SuppressWarnings("ConstantConditions")
-	public static void playPhialCorkpopSound(PlayerEntity playerEntity){
-		playSound(playerEntity, ArcanaSounds.Impl.phial_corkpop, SoundCategory.BLOCKS,0.4f,1.4f);
+	public static void playPhialCorkpopSound(Player player){
+		playSound(player, ArcanaSounds.Impl.phial_corkpop, SoundSource.BLOCKS,0.4f,1.4f);
 	}
 
-	public static void playSpellCastSound(PlayerEntity playerEntity) {
-		playSound(playerEntity, ArcanaSounds.Impl.spell_cast, SoundCategory.PLAYERS,0.4f,1.0f);
+	public static void playSpellCastSound(Player player) {
+		playSound(player, ArcanaSounds.Impl.spell_cast, SoundSource.PLAYERS,0.4f,1.0f);
 	}
 
-	public static void playSoundOnce(PlayerEntity playerEntity, SoundEvent evt, SoundCategory category, float v, float p) {
+	public static void playSoundOnce(Player player, SoundEvent evt, SoundSource category, float v, float p) {
 		if (new Random().nextInt(400) == 0)
-			playSound(playerEntity, evt, category, v, p);
+			playSound(player, evt, category, v, p);
 	}
 
-	public static void playSound(PlayerEntity playerEntity, SoundEvent evt, SoundCategory category, float v, float p) {
-		if (!playerEntity.world.isRemote) return;
+	public static void playSound(Player player, SoundEvent evt, SoundSource category, float v, float p) {
+		if (!player.level.isClientSide()) return;
 		if (evt.equals(null)) return;
-		playerEntity.playSound(evt, category,v,p);
+		player.level.playSound(null, player, evt, category,v,p);
 	}
 
 	//Impl

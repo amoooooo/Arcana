@@ -2,11 +2,11 @@ package net.arcanamod.network;
 
 import net.arcanamod.Arcana;
 import net.arcanamod.aspects.Aspects;
-import net.arcanamod.containers.AspectContainer;
+import net.arcanamod.containers.AspectMenu;
 import net.arcanamod.containers.slots.AspectSlot;
-import net.minecraft.client.entity.player.ClientPlayerEntity;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.network.NetworkEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -26,24 +26,24 @@ public class PkClientSlotDrain {
 		this.type = type;
 	}
 
-	public static void encode(PkClientSlotDrain msg, PacketBuffer buffer){
+	public static void encode(PkClientSlotDrain msg, FriendlyByteBuf buffer){
 		buffer.writeInt(msg.windowId);
 		buffer.writeInt(msg.slotId);
-		buffer.writeEnumValue(msg.type);
+		buffer.writeEnum(msg.type);
 	}
 
-	public static PkClientSlotDrain decode(PacketBuffer buffer){
-		return new PkClientSlotDrain(buffer.readInt(),buffer.readInt(), buffer.readEnumValue(PkAspectClick.ClickType.class));
+	public static PkClientSlotDrain decode(FriendlyByteBuf buffer){
+		return new PkClientSlotDrain(buffer.readInt(),buffer.readInt(), buffer.readEnum(PkAspectClick.ClickType.class));
 	}
 
 	public static void handle(PkClientSlotDrain msg, Supplier<NetworkEvent.Context> supplier){
 		// on server
 		supplier.get().enqueueWork(() -> {
-			ClientPlayerEntity epm = (ClientPlayerEntity)Arcana.proxy.getPlayerOnClient();
-			if(epm.openContainer.windowId == msg.windowId){
+			LocalPlayer epm = (LocalPlayer) Arcana.proxy.getPlayerOnClient();
+			if(epm.containerMenu.containerId == msg.windowId){
 				// decrease/increase whats held on the client
 				// rename to PktAspectClickConfirmed
-				AspectContainer container = (AspectContainer)epm.openContainer;
+				AspectMenu container = (AspectMenu) epm.containerMenu;
 				if(container.getAspectSlots().size() > msg.slotId){
 					AspectSlot slot = container.getAspectSlots().get(msg.slotId);
 					if((msg.type == PkAspectClick.ClickType.TAKE || msg.type == PkAspectClick.ClickType.TAKE_ALL) && (container.getHeldAspect() == Aspects.EMPTY || container.getHeldAspect() == null || container.getHeldAspect() == slot.getAspect()) && slot.getAmount() > 0){

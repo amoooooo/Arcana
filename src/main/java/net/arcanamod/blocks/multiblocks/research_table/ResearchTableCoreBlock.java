@@ -1,36 +1,36 @@
 package net.arcanamod.blocks.multiblocks.research_table;
 
-import mcp.MethodsReturnNonnullByDefault;
 import net.arcanamod.blocks.ArcanaBlocks;
 import net.arcanamod.blocks.bases.GroupedBlock;
 import net.arcanamod.blocks.bases.WaterloggableBlock;
 import net.arcanamod.blocks.multiblocks.StaticComponent;
-import net.arcanamod.blocks.tiles.ResearchTableTileEntity;
+import net.arcanamod.blocks.tiles.ResearchTableBlockEntity;
 import net.arcanamod.items.ArcanaItems;
 import net.arcanamod.util.ShapeUtils;
-import net.minecraft.block.*;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.inventory.InventoryHelper;
-import net.minecraft.inventory.container.INamedContainerProvider;
-import net.minecraft.item.BlockItemUseContext;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemGroup;
-import net.minecraft.item.ItemStack;
-import net.minecraft.state.BooleanProperty;
-import net.minecraft.state.DirectionProperty;
-import net.minecraft.state.StateContainer;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.Direction;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.BlockRayTraceResult;
-import net.minecraft.util.math.vector.Vector3i;
-import net.minecraft.world.IBlockReader;
-import net.minecraft.world.World;
-import net.minecraftforge.fml.network.NetworkHooks;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.Vec3i;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Containers;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.*;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraftforge.network.NetworkHooks;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -39,32 +39,32 @@ import static net.arcanamod.blocks.multiblocks.research_table.ResearchTableCompo
 
 @MethodsReturnNonnullByDefault
 @ParametersAreNonnullByDefault
-public class ResearchTableCoreBlock extends WaterloggableBlock implements StaticComponent, GroupedBlock {
-    public static final DirectionProperty FACING = HorizontalBlock.HORIZONTAL_FACING;
+public class ResearchTableCoreBlock extends WaterloggableBlock implements StaticComponent, GroupedBlock, EntityBlock {
+    public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final BooleanProperty INK = BooleanProperty.create("ink");
 
     public ResearchTableCoreBlock(Properties properties) {
         super(properties);
     }
 
-    @Override
-    public boolean hasTileEntity(BlockState state) {
-        return true;
-    }
+//    @Override
+//    public boolean hasTileEntity(BlockState state) {
+//        return true;
+//    }
 
     @Override
-    public ItemGroup getGroup() {
+    public CreativeModeTab getGroup() {
         return null;
     }
 
     @Override
-    public TileEntity createTileEntity(BlockState state, IBlockReader world) {
-        return new ResearchTableTileEntity();
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state){
+        return new ResearchTableBlockEntity(pos, state);
     }
 
     @Override
-    public BlockRenderType getRenderType(BlockState state) {
-        return BlockRenderType.MODEL;
+    public RenderShape getRenderShape(BlockState state) {
+        return RenderShape.MODEL;
     }
 
     public boolean isCore(BlockPos pos, BlockState state) {
@@ -75,71 +75,71 @@ public class ResearchTableCoreBlock extends WaterloggableBlock implements Static
         return pos;
     }
 
-    protected void fillStateContainer(StateContainer.Builder<Block, BlockState> builder) {
-        super.fillStateContainer(builder);
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        super.createBlockStateDefinition(builder);
         builder.add(FACING).add(INK);
     }
 
     @Override
-    public void onBlockHarvested(World world, BlockPos pos, BlockState state, PlayerEntity player){
-        BlockPos offset = pos.add(ShapeUtils.fromNorth(COM_OFFSET, state.get(FACING)));
+    public void playerWillDestroy(Level world, BlockPos pos, BlockState state, Player player){
+        BlockPos offset = pos.offset(ShapeUtils.fromNorth(COM_OFFSET, state.getValue(FACING)));
         if(world.getBlockState(offset).getBlock() == ArcanaBlocks.RESEARCH_TABLE_COMPONENT.get()) {
             world.destroyBlock(offset, false);
         }
-        super.onBlockHarvested(world, pos, state, player);
+        super.playerWillDestroy(world, pos, state, player);
     }
 
-    public void onReplaced(BlockState state, World worldIn, BlockPos pos, BlockState newState, boolean isMoving) {
+    public void onRemove(BlockState state, Level worldIn, BlockPos pos, BlockState newState, boolean isMoving) {
         if (state.getBlock() != newState.getBlock()) {
-            TileEntity tileentity = worldIn.getTileEntity(pos);
-            if (tileentity instanceof ResearchTableTileEntity) {
-                InventoryHelper.dropInventoryItems(worldIn, pos, (ResearchTableTileEntity)tileentity);
+            BlockEntity tileentity = worldIn.getBlockEntity(pos);
+            if (tileentity instanceof ResearchTableBlockEntity) {
+                Containers.dropContents(worldIn, pos, (ResearchTableBlockEntity)tileentity);
             }
-            super.onReplaced(state, worldIn, pos, newState, isMoving);
+            super.onRemove(state, worldIn, pos, newState, isMoving);
         }
     }
 
     @Override
-    public void neighborChanged(BlockState state, World world, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
-        Direction facing = state.get(FACING);
-        Vector3i rotated = ShapeUtils.fromNorth(COM_OFFSET, facing);
-        if(world.getBlockState(pos.add(rotated)).getBlock() != ArcanaBlocks.RESEARCH_TABLE_COMPONENT.get())
-            world.destroyBlock(pos.add(rotated), false);
+    public void neighborChanged(BlockState state, Level world, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
+        Direction facing = state.getValue(FACING);
+        Vec3i rotated = ShapeUtils.fromNorth(COM_OFFSET, facing);
+        if(world.getBlockState(pos.offset(rotated)).getBlock() != ArcanaBlocks.RESEARCH_TABLE_COMPONENT.get())
+            world.destroyBlock(pos.offset(rotated), false);
         super.neighborChanged(state, world, pos, block, fromPos, isMoving);
     }
 
-    public BlockState getStateForPlacement(BlockItemUseContext context) {
-        Direction facing = context.getPlacementHorizontalFacing();
-        if (!context.getWorld().getBlockState(context.getPos()).isReplaceable(context))
+    public BlockState getStateForPlacement(BlockPlaceContext context) {
+        Direction facing = context.getHorizontalDirection();
+        if (!context.getLevel().getBlockState(context.getClickedPos()).canBeReplaced(context))
             return null;
-        if (!context.getWorld().getBlockState(context.getPos().add(ShapeUtils.fromNorth(COM_OFFSET, facing))).isReplaceable(context))
+        if (!context.getLevel().getBlockState(context.getClickedPos().offset(ShapeUtils.fromNorth(COM_OFFSET, facing))).canBeReplaced(context))
             return null;
-        return this.getDefaultState().with(FACING, facing).with(INK, false);
+        return this.defaultBlockState().setValue(FACING, facing).setValue(INK, false);
     }
 
-    public void onBlockPlacedBy(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
-        super.onBlockPlacedBy(world, pos, state, placer, stack);
-        if (!world.isRemote) {
-            Direction facing = state.get(FACING);
-            BlockPos comPos = pos.add(ShapeUtils.fromNorth(COM_OFFSET, facing));
-            world.setBlockState(comPos,
-                    ArcanaBlocks.RESEARCH_TABLE_COMPONENT.get().getDefaultState()
-                            .with(ResearchTableComponentBlock.FACING, facing));
-            world.notifyNeighborsOfStateChange(comPos, Blocks.AIR);
-            state.updateNeighbours(world, comPos, 3);
+    public void setPlacedBy(Level world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
+        super.setPlacedBy(world, pos, state, placer, stack);
+        if (!world.isClientSide) {
+            Direction facing = state.getValue(FACING);
+            BlockPos comPos = pos.offset(ShapeUtils.fromNorth(COM_OFFSET, facing));
+            world.setBlockAndUpdate(comPos,
+                    ArcanaBlocks.RESEARCH_TABLE_COMPONENT.get().defaultBlockState()
+                            .setValue(ResearchTableComponentBlock.FACING, facing));
+            world.blockUpdated(comPos, Blocks.AIR);
+            state.updateNeighbourShapes(world, comPos, 3);
         }
     }
 
     @Override
-    public ActionResultType onBlockActivated(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockRayTraceResult rayTraceResult) {
-        if(world.isRemote)
-            return ActionResultType.SUCCESS;
-        TileEntity te = world.getTileEntity(pos);
-        if (te instanceof ResearchTableTileEntity) {
-            NetworkHooks.openGui((ServerPlayerEntity) player, (INamedContainerProvider) te, buf -> buf.writeBlockPos(pos));
-            return ActionResultType.SUCCESS;
+    public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult rayTraceResult) {
+        if(world.isClientSide)
+            return InteractionResult.SUCCESS;
+        BlockEntity te = world.getBlockEntity(pos);
+        if (te instanceof ResearchTableBlockEntity) {
+            NetworkHooks.openGui((ServerPlayer) player, (MenuProvider) te, buf -> buf.writeBlockPos(pos));
+            return InteractionResult.SUCCESS;
         }
-        return super.onBlockActivated(state, world, pos, player, hand, rayTraceResult);
+        return super.use(state, world, pos, player, hand, rayTraceResult);
     }
 
     @Override

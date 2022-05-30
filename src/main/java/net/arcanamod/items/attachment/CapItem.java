@@ -1,7 +1,7 @@
 package net.arcanamod.items.attachment;
 
-import net.minecraft.item.Item;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 
 /**
  * An item that implements {@link Cap}. Allows for registering an item and cap type together.

@@ -5,20 +5,20 @@ import net.arcanamod.aspects.Aspect;
 import net.arcanamod.aspects.AspectUtils;
 import net.arcanamod.aspects.Aspects;
 import net.arcanamod.blocks.ArcanaBlocks;
-import net.arcanamod.blocks.tiles.WardenedBlockTileEntity;
+import net.arcanamod.blocks.tiles.WardenedBlockBlockEntity;
 import net.arcanamod.effects.ArcanaEffects;
-import net.arcanamod.systems.spell.*;
+import net.arcanamod.systems.spell.SpellValues;
 import net.arcanamod.systems.spell.casts.Cast;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.potion.EffectInstance;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 
 import java.util.Optional;
 
@@ -48,28 +48,28 @@ public class ArmourCast extends Cast {
 	}
 
 	@Override
-	public ActionResultType useOnEntity(PlayerEntity caster, Entity targetEntity) {
+	public InteractionResult useOnEntity(Player caster, Entity targetEntity) {
 		if (targetEntity instanceof LivingEntity)
-			((LivingEntity)targetEntity).addPotionEffect(new EffectInstance(ArcanaEffects.WARDING.get(),getWardingDuration(),getAmplifier(),false,false));
-		return ActionResultType.SUCCESS;
+			((LivingEntity)targetEntity).addEffect(new MobEffectInstance(ArcanaEffects.WARDING.get(),getWardingDuration(),getAmplifier(),false,false));
+		return InteractionResult.SUCCESS;
 	}
 
 	@Override
-	public ActionResultType useOnBlock(PlayerEntity caster, World world, BlockPos blockTarget) {
-		if (world.isRemote) return ActionResultType.SUCCESS;
+	public InteractionResult useOnBlock(Player caster, Level world, BlockPos blockTarget) {
+		if (world.isClientSide) return InteractionResult.SUCCESS;
 		Block previousState = world.getBlockState(blockTarget).getBlock();
-		if (previousState.getBlock() != ArcanaBlocks.WARDENED_BLOCK.get()) {
-			world.setBlockState(blockTarget, ArcanaBlocks.WARDENED_BLOCK.get().getDefaultState());
-			((WardenedBlockTileEntity) world.getTileEntity(blockTarget)).setState(Optional.of(previousState.getDefaultState()));
+		if (previousState != ArcanaBlocks.WARDENED_BLOCK.get()) {
+			world.setBlockAndUpdate(blockTarget, ArcanaBlocks.WARDENED_BLOCK.get().defaultBlockState());
+			((WardenedBlockBlockEntity) world.getBlockEntity(blockTarget)).setState(Optional.of(previousState.defaultBlockState()));
 		} else {
-			world.setBlockState(blockTarget, ((WardenedBlockTileEntity) world.getTileEntity(blockTarget)).getState().orElse(Blocks.AIR.getDefaultState()));
+			world.setBlockAndUpdate(blockTarget, ((WardenedBlockBlockEntity) world.getBlockEntity(blockTarget)).getState().orElse(Blocks.AIR.defaultBlockState()));
 		}
-		return ActionResultType.SUCCESS;
+		return InteractionResult.SUCCESS;
 	}
 
 	@Override
-	public ActionResultType useOnPlayer(PlayerEntity playerTarget) {
-		playerTarget.addPotionEffect(new EffectInstance(ArcanaEffects.WARDING.get(),getWardingDuration(),getAmplifier(),false,false));
-		return ActionResultType.SUCCESS;
+	public InteractionResult useOnPlayer(Player playerTarget) {
+		playerTarget.addEffect(new MobEffectInstance(ArcanaEffects.WARDING.get(),getWardingDuration(),getAmplifier(),false,false));
+		return InteractionResult.SUCCESS;
 	}
 }

@@ -1,17 +1,16 @@
 package net.arcanamod.network;
 
 import net.arcanamod.aspects.Aspect;
-import net.arcanamod.blocks.tiles.FociForgeTileEntity;
-import net.arcanamod.containers.AspectContainer;
 import net.arcanamod.capabilities.Researcher;
+import net.arcanamod.containers.AspectMenu;
 import net.arcanamod.systems.research.Pin;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.fml.network.NetworkRegistry;
-import net.minecraftforge.fml.network.PacketDistributor;
-import net.minecraftforge.fml.network.simple.SimpleChannel;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.network.NetworkRegistry;
+import net.minecraftforge.network.PacketDistributor;
+import net.minecraftforge.network.simple.SimpleChannel;
 
 import javax.annotation.Nonnull;
 
@@ -47,7 +46,7 @@ public class Connection{
 		INSTANCE.registerMessage(id++, PkWriteSpellToFoci.class, PkWriteSpellToFoci::encode, PkWriteSpellToFoci::decode, PkWriteSpellToFoci::handle);
 	}
 	
-	public static void sendTo(Object packet, ServerPlayerEntity target){
+	public static void sendTo(Object packet, ServerPlayer target){
 		INSTANCE.send(PacketDistributor.PLAYER.with(() -> target), packet);
 	}
 	
@@ -55,7 +54,7 @@ public class Connection{
 		INSTANCE.send(PacketDistributor.SERVER.noArg(), packet);
 	}
 	
-	public static void sendModifyResearch(PkModifyResearch.Diff change, ResourceLocation research, ServerPlayerEntity target){
+	public static void sendModifyResearch(PkModifyResearch.Diff change, ResourceLocation research, ServerPlayer target){
 		INSTANCE.send(PacketDistributor.PLAYER.with(() -> target), new PkModifyResearch(change, research));
 	}
 	
@@ -63,7 +62,7 @@ public class Connection{
 		INSTANCE.sendToServer(new PkTryAdvance(research));
 	}
 	
-	public static void sendSyncPlayerResearch(Researcher from, ServerPlayerEntity target){
+	public static void sendSyncPlayerResearch(Researcher from, ServerPlayer target){
 		INSTANCE.send(PacketDistributor.PLAYER.with(() -> target), new PkSyncPlayerResearch(from.serializeNBT()));
 	}
 
@@ -71,7 +70,7 @@ public class Connection{
 		INSTANCE.sendToServer(new PkAspectClick(windowId, slotId, type, expectedAspect));
 	}
 
-	public static void sendSyncAspectContainer(AspectContainer container, ServerPlayerEntity target) {
+	public static void sendSyncAspectContainer(AspectMenu container, ServerPlayer target) {
 		INSTANCE.send(PacketDistributor.PLAYER.with(() -> target), new PkSyncAspectContainer(container));
 	}
 
@@ -79,7 +78,7 @@ public class Connection{
 		INSTANCE.sendToServer(new PkGetNote(id, pageName));
 	}
 
-	public static void sendClientSlotDrain(int windowId, int slotId, PkAspectClick.ClickType type, ServerPlayerEntity target) {
+	public static void sendClientSlotDrain(int windowId, int slotId, PkAspectClick.ClickType type, ServerPlayer target) {
 		INSTANCE.send(PacketDistributor.PLAYER.with(() -> target), new PkClientSlotDrain(windowId, slotId, type));
 	}
 
@@ -91,7 +90,7 @@ public class Connection{
 		INSTANCE.sendToServer(new PkModifyPins(diff, pin.getEntry().key(), pin.getStage()));
 	}
 
-	public static void sendWriteSpell(ItemStack focus, CompoundNBT nbt) {
+	public static void sendWriteSpell(ItemStack focus, CompoundTag nbt) {
 		INSTANCE.sendToServer(new PkWriteSpellToFoci(focus,nbt));
 	}
 }

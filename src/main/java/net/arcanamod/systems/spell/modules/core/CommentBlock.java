@@ -1,10 +1,10 @@
 package net.arcanamod.systems.spell.modules.core;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.arcanamod.client.gui.ClientUiUtil;
 import net.arcanamod.systems.spell.modules.SpellModule;
-import net.minecraft.client.renderer.ItemRenderer;
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.client.renderer.entity.ItemRenderer;
+import net.minecraft.nbt.CompoundTag;
 
 public class CommentBlock extends SpellModule {
 
@@ -34,13 +34,13 @@ public class CommentBlock extends SpellModule {
 	}
 
 	@Override
-	public void fromNBT(CompoundNBT compound) {
+	public void fromNBT(CompoundTag compound) {
 		super.fromNBT(compound);
 		comment = compound.getString("comment");
 	}
 
 	@Override
-	public CompoundNBT toNBT(CompoundNBT compound) {
+	public CompoundTag toNBT(CompoundTag compound) {
 		super.toNBT(compound);
 		compound.putString("comment", comment);
 		return compound;
@@ -66,12 +66,12 @@ public class CommentBlock extends SpellModule {
 
 
 	@Override
-	public void renderUnderMouse(int x, int y, ItemRenderer itemRenderer, boolean floating, MatrixStack stack) {
+	public void renderUnderMouse(int x, int y, ItemRenderer itemRenderer, boolean floating, PoseStack stack) {
 		ClientUiUtil.drawTexturedModalRect(stack, x, y, 176, 0, 16, 16);
 	}
 
 	@Override
-	public void renderInMinigame(int mouseX, int mouseY, ItemRenderer itemRenderer, boolean floating, MatrixStack stack) {
+	public void renderInMinigame(int mouseX, int mouseY, ItemRenderer itemRenderer, boolean floating, PoseStack stack) {
 		int left = Math.min(x, startX);
 		int top = Math.min(y, startY);
 

@@ -1,21 +1,21 @@
 package net.arcanamod.entities;
 
-import mcp.MethodsReturnNonnullByDefault;
 import net.arcanamod.blocks.DelegatingBlock;
 import net.arcanamod.items.ArcanaItems;
 import net.arcanamod.systems.taint.Taint;
 import net.arcanamod.world.AuraView;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.projectile.ProjectileItemEntity;
-import net.minecraft.item.Item;
-import net.minecraft.network.IPacket;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.RayTraceResult;
-import net.minecraft.world.World;
-import net.minecraftforge.fml.network.NetworkHooks;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.projectile.ThrowableItemProjectile;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.HitResult;
+import net.minecraftforge.network.NetworkHooks;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
@@ -23,9 +23,9 @@ import static net.arcanamod.systems.taint.Taint.UNTAINTED;
 
 @MethodsReturnNonnullByDefault
 @ParametersAreNonnullByDefault
-public class TaintBottleEntity extends ProjectileItemEntity{
+public class TaintBottleEntity extends ThrowableItemProjectile {
 	
-	public TaintBottleEntity(EntityType<? extends ProjectileItemEntity> type, World world){
+	public TaintBottleEntity(EntityType<? extends ThrowableItemProjectile> type, Level world){
 		super(type, world);
 	}
 	
@@ -33,38 +33,38 @@ public class TaintBottleEntity extends ProjectileItemEntity{
 		return ArcanaItems.TAINT_IN_A_BOTTLE.get();
 	}
 	
-	public TaintBottleEntity(LivingEntity thrower, World world){
+	public TaintBottleEntity(LivingEntity thrower, Level world){
 		super(ArcanaEntities.TAINT_BOTTLE.get(), thrower, world);
 	}
 	
-	protected void onImpact(RayTraceResult result){
-		if(!world.isRemote()){
+	protected void onHit(HitResult result){
+		if(!level.isClientSide()){
 			// pick some blocks and taint them
 			// aim to taint 6 blocks within a 5x3x5 area, fail after 12 attempts
 			int tainted = 0;
-			BlockPos.Mutable pos = new BlockPos.Mutable();
+			BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 			for(int tries = 0; tries < 12 && tainted < 6; tries++){
-				pos.setPos(this.getPosition()).move(world.rand.nextInt(5) - 2, world.rand.nextInt(3) - 1, world.rand.nextInt(5) - 2);
-				BlockState state = world.getBlockState(pos);
-				if(!state.isAir(world, pos) && !Taint.isTainted(state.getBlock()) && !Taint.isBlockProtectedByPureNode(world, pos)){
+				pos.set(this.getOnPos()).move(level.random.nextInt(5) - 2, level.random.nextInt(3) - 1, level.random.nextInt(5) - 2);
+				BlockState state = level.getBlockState(pos);
+				if(!state.isAir() && !Taint.isTainted(state.getBlock()) && !Taint.isBlockProtectedByPureNode(level, pos)){
 					Block to = Taint.getTaintedOfBlock(state.getBlock());
 					if(to != null){
-						world.setBlockState(pos, DelegatingBlock.switchBlock(state, to).with(UNTAINTED, false));
+						level.setBlockAndUpdate(pos, DelegatingBlock.switchBlock(state, to).setValue(UNTAINTED, false));
 						tainted++;
 					}
 				}
 			}
 			// add some flux too
-			AuraView.SIDED_FACTORY.apply(world).addFluxAt(getPosition(), world.rand.nextInt(3) + 3 + (6 - tainted));
+			AuraView.SIDED_FACTORY.apply(level).addFluxAt(getOnPos(), level.random.nextInt(3) + 3 + (6 - tainted));
 			// add some particles
-			world.playEvent(2007, new BlockPos(this.getPosition()), 0xa200ff);
+			level.levelEvent(2007, new BlockPos(this.getOnPos()), 0xa200ff);
 			// and die
-			this.remove();
+			this.remove(RemovalReason.DISCARDED);
 		}
 	}
 	
 	@Override
-	public IPacket<?> createSpawnPacket(){
+	public Packet<?> getAddEntityPacket(){
 		return NetworkHooks.getEntitySpawningPacket(this);
 	}
 }

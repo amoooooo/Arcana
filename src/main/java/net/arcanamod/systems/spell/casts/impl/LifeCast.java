@@ -5,16 +5,16 @@ import net.arcanamod.aspects.Aspect;
 import net.arcanamod.aspects.AspectUtils;
 import net.arcanamod.aspects.Aspects;
 import net.arcanamod.effects.ArcanaEffects;
-import net.arcanamod.systems.spell.*;
+import net.arcanamod.systems.spell.SpellValues;
 import net.arcanamod.systems.spell.casts.Cast;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.potion.EffectInstance;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 
 public class LifeCast extends Cast {
 
@@ -42,21 +42,21 @@ public class LifeCast extends Cast {
 	}
 
 	@Override
-	public ActionResultType useOnEntity(PlayerEntity caster, Entity targetEntity) {
+	public InteractionResult useOnEntity(Player caster, Entity targetEntity) {
 		if (targetEntity instanceof LivingEntity)
-			((LivingEntity)targetEntity).addPotionEffect(new EffectInstance(ArcanaEffects.VICTUS.get(),getVictusDuration(),getAmplifier(),false,false));
-		return ActionResultType.SUCCESS;
+			((LivingEntity)targetEntity).addEffect(new MobEffectInstance(ArcanaEffects.VICTUS.get(),getVictusDuration(),getAmplifier(),false,false));
+		return InteractionResult.SUCCESS;
 	}
 
 	@Override
-	public ActionResultType useOnBlock(PlayerEntity caster, World world, BlockPos blockTarget) {
+	public InteractionResult useOnBlock(Player caster, Level world, BlockPos blockTarget) {
 
-		return ActionResultType.SUCCESS;
+		return InteractionResult.SUCCESS;
 	}
 
 	@Override
-	public ActionResultType useOnPlayer(PlayerEntity playerTarget) {
-		playerTarget.addPotionEffect(new EffectInstance(ArcanaEffects.VICTUS.get(),getVictusDuration(),getAmplifier(),false,false));
-		return ActionResultType.SUCCESS;
+	public InteractionResult useOnPlayer(Player playerTarget) {
+		playerTarget.addEffect(new MobEffectInstance(ArcanaEffects.VICTUS.get(),getVictusDuration(),getAmplifier(),false,false));
+		return InteractionResult.SUCCESS;
 	}
 }

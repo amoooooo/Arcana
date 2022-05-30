@@ -1,7 +1,7 @@
 package net.arcanamod.capabilities;
 
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.entity.LivingEntity;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -26,9 +26,9 @@ public interface TaintTrackable{
 	
 	void addTimeInTaintBiome(int timeInTaintBiome);
 	
-	CompoundNBT serializeNBT();
+	CompoundTag serializeNBT();
 	
-	void deserializeNBT(@Nonnull CompoundNBT data);
+	void deserializeNBT(@Nonnull CompoundTag data);
 	
 	@SuppressWarnings("ConstantConditions")
 	@Nullable

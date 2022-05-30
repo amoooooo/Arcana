@@ -1,36 +1,35 @@
 package net.arcanamod.items;
 
-import net.arcanamod.aspects.AspectStack;
 import net.arcanamod.blocks.ArcanaBlocks;
 import net.arcanamod.blocks.CrucibleBlock;
 import net.arcanamod.items.attachment.Cap;
 import net.arcanamod.items.attachment.Core;
-import net.arcanamod.systems.spell.Spell;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.CauldronBlock;
-import net.minecraft.client.resources.I18n;
-import net.minecraft.client.util.ITooltipFlag;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemGroup;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemUseContext;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.particles.ParticleTypes;
-import net.minecraft.util.*;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TextFormatting;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.World;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.NonNullList;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LayeredCauldronBlock;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 public class ScepterItem extends MagicDeviceItem{
 	public ScepterItem(Properties properties) {
@@ -38,7 +37,7 @@ public class ScepterItem extends MagicDeviceItem{
 	}
 
 	public static ItemStack withCapAndCore(String cap, String core){
-		CompoundNBT nbt = new CompoundNBT();
+		CompoundTag nbt = new CompoundTag();
 		nbt.putString("cap", cap);
 		nbt.putString("core", core);
 		ItemStack stack = new ItemStack(ArcanaItems.WAND.get(), 1);
@@ -54,31 +53,32 @@ public class ScepterItem extends MagicDeviceItem{
 		return withCapAndCore(cap.getId(), core.getId());
 	}
 
-	public ActionResultType onItemUse(ItemUseContext context){
-		return convert(context.getWorld(), context.getPos(), context.getPlayer());
+	public InteractionResult useOn(UseOnContext context){
+		return convert(context.getLevel(), context.getClickedPos(), context.getPlayer());
 	}
 
-	public static ActionResultType convert(World world, BlockPos pos, @Nullable PlayerEntity player){
+	public static InteractionResult convert(Level world, BlockPos pos, @Nullable Player player){
 		BlockState state = world.getBlockState(pos);
 		if(state.getBlock() == Blocks.CAULDRON){
-			world.setBlockState(pos, ArcanaBlocks.CRUCIBLE.get().getDefaultState().with(CrucibleBlock.FULL, state.get(CauldronBlock.LEVEL) >= 2));
-			world.playSound(player, pos, SoundEvents.ENTITY_EVOKER_CAST_SPELL, SoundCategory.PLAYERS, 1, 1);
+			world.setBlockAndUpdate(pos, ArcanaBlocks.CRUCIBLE.get().defaultBlockState().setValue(CrucibleBlock.FULL, state.getValue(LayeredCauldronBlock.LEVEL) >= 2));
+			world.playSound(player, pos, SoundEvents.EVOKER_CAST_SPELL, SoundSource.PLAYERS, 1, 1);
 			for(int i = 0; i < 20; i++)
-				world.addParticle(ParticleTypes.END_ROD, pos.getX() + world.rand.nextDouble(), pos.getY() + world.rand.nextDouble(), pos.getZ() + world.rand.nextDouble(), 0, 0, 0);
-			return ActionResultType.SUCCESS;
+				world.addParticle(ParticleTypes.END_ROD, pos.getX() + world.random.nextDouble(), pos.getY() + world.random.nextDouble(), pos.getZ() + world.random.nextDouble(), 0, 0, 0);
+			return InteractionResult.SUCCESS;
 		}
 		if(state.getBlock() == Blocks.CRAFTING_TABLE){
-			world.setBlockState(pos, ArcanaBlocks.ARCANE_CRAFTING_TABLE.get().getDefaultState());
-			world.playSound(player, pos, SoundEvents.ENTITY_EVOKER_CAST_SPELL, SoundCategory.PLAYERS, 1, 1);
+			world.setBlockAndUpdate(pos, ArcanaBlocks.ARCANE_CRAFTING_TABLE.get().defaultBlockState());
+			world.playSound(player, pos, SoundEvents.EVOKER_CAST_SPELL, SoundSource.PLAYERS, 1, 1);
 			for(int i = 0; i < 20; i++)
-				world.addParticle(ParticleTypes.END_ROD, (pos.getX() - .1f) + world.rand.nextDouble() * 1.2f, (pos.getY() - .1f) + world.rand.nextDouble() * 1.2f, (pos.getZ() - .1f) + world.rand.nextDouble() * 1.2f, 0, 0, 0);
-			return ActionResultType.SUCCESS;
+				world.addParticle(ParticleTypes.END_ROD, (pos.getX() - .1f) + world.random.nextDouble() * 1.2f, (pos.getY() - .1f) + world.random.nextDouble() * 1.2f, (pos.getZ() - .1f) + world.random.nextDouble() * 1.2f, 0, 0, 0);
+			return InteractionResult.SUCCESS;
 		}
-		return ActionResultType.PASS;
+		return InteractionResult.PASS;
 	}
 
-	public void fillItemGroup(ItemGroup group, NonNullList<ItemStack> items){
-		if(isInGroup(group)){
+	@Override
+	public void fillItemCategory(CreativeModeTab group, NonNullList<ItemStack> items){
+		if(allowdedIn(group)){
 			// iron/wooden, silver/dair, gold/greatwood, thaumium/silverwood, void/arcanium
 			items.add(withCapAndCoreForCt("iron_cap", "wood_wand"));
 			items.add(withCapAndCoreForCt("silver_cap", "dair_wand"));
@@ -93,7 +93,7 @@ public class ScepterItem extends MagicDeviceItem{
 	}
 
 	public static ItemStack withCapAndCoreForCt(String cap, String core){
-		CompoundNBT nbt = new CompoundNBT();
+		CompoundTag nbt = new CompoundTag();
 		nbt.putString("cap", "arcana:" + cap);
 		nbt.putString("core", "arcana:" + core);
 		ItemStack stack = new ItemStack(ArcanaItems.SCEPTER.get(), 1);
@@ -102,10 +102,11 @@ public class ScepterItem extends MagicDeviceItem{
 	}
 
 	@OnlyIn(Dist.CLIENT)
-	public void addInformation(@Nonnull ItemStack stack, @Nullable World world, @Nonnull List<ITextComponent> tooltip, @Nonnull ITooltipFlag flag){
+	@Override
+	public void appendHoverText(@Nonnull ItemStack stack, @Nullable Level world, @Nonnull List<Component> tooltip, @Nonnull TooltipFlag flag){
 		// Add info
-		tooltip.add(new TranslationTextComponent("tooltip.arcana.crafting_wand").mergeStyle(TextFormatting.AQUA));
-		super.addInformation(stack, world, tooltip, flag);
+		tooltip.add(new TranslatableComponent("tooltip.arcana.crafting_wand").withStyle(ChatFormatting.AQUA));
+		super.appendHoverText(stack, world, tooltip, flag);
 	}
 
 	@Override

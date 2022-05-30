@@ -9,19 +9,18 @@ import net.arcanamod.Arcana;
 import net.arcanamod.aspects.Aspect;
 import net.arcanamod.aspects.Aspects;
 import net.arcanamod.aspects.handlers.AspectHandler;
-import net.arcanamod.containers.ResearchTableContainer;
+import net.arcanamod.containers.ResearchTableMenu;
 import net.arcanamod.containers.slots.AspectSlot;
 import net.arcanamod.containers.slots.AspectStoreSlot;
 import net.arcanamod.systems.research.Puzzle;
 import net.arcanamod.util.GraphTraverser;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.container.Slot;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.INBT;
-import net.minecraft.nbt.ListNBT;
-import net.minecraft.nbt.StringNBT;
-import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.common.util.Constants;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.Slot;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -73,19 +72,19 @@ public class Chemistry extends Puzzle{
 		}
 	}
 	
-	public CompoundNBT getData(){
-		CompoundNBT compound = new CompoundNBT();
-		ListNBT nodeList = new ListNBT();
+	public CompoundTag getData(){
+		CompoundTag compound = new CompoundTag();
+		ListTag nodeList = new ListTag();
 		for(Aspect node : nodes)
-			nodeList.add(StringNBT.valueOf(node.name()));
+			nodeList.add(StringTag.valueOf(node.name()));
 		compound.put("nodes", nodeList);
 		return compound;
 	}
 	
-	public static Chemistry fromNBT(CompoundNBT passData){
+	public static Chemistry fromNBT(CompoundTag passData){
 		List<Aspect> nodes = new ArrayList<>();
-		for(INBT node : passData.getList("nodes", Constants.NBT.TAG_STRING))
-			nodes.add(Aspects.valueOf(node.getString()));
+		for(Tag node : passData.getList("nodes", Tag.TAG_STRING))
+			nodes.add(Aspects.valueOf(node.getAsString()));
 		return new Chemistry(nodes);
 	}
 	
@@ -106,7 +105,7 @@ public class Chemistry extends Puzzle{
 		return grid;
 	}
 	
-	public List<Puzzle.SlotInfo> getItemSlotLocations(PlayerEntity player){
+	public List<Puzzle.SlotInfo> getItemSlotLocations(Player player){
 		return Collections.emptyList();
 	}
 	
@@ -114,7 +113,7 @@ public class Chemistry extends Puzzle{
 		return genHexGrid(gWidth, gHeight, returnInv).stream().peek(slot -> slot.x += 2).peek(slot -> slot.y += 2).collect(Collectors.toList());
 	}
 	
-	public boolean validate(List<AspectSlot> puzzleSlots, List<Slot> ignored, PlayerEntity player, ResearchTableContainer container){
+	public boolean validate(List<AspectSlot> puzzleSlots, List<Slot> ignored, Player player, ResearchTableMenu container){
 		fillGraph(puzzleSlots);
 		// now traverse the graph
 		AtomicInteger count = new AtomicInteger();

@@ -1,7 +1,7 @@
 package net.arcanamod.aspects;
 
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 
 import javax.annotation.Nonnull;
 import java.util.Objects;
@@ -60,15 +60,15 @@ public class AspectStack{
 	}
 	
 	@Nonnull
-	public CompoundNBT toNbt(){
-		CompoundNBT tag = new CompoundNBT();
+	public CompoundTag toNbt(){
+		CompoundTag tag = new CompoundTag();
 		tag.putString("aspect", getAspect().toResourceLocation().toString());
 		tag.putFloat("amount", getAmount());
 		return tag;
 	}
 	
 	@Nonnull
-	public static AspectStack fromNbt(@Nonnull CompoundNBT tag){
+	public static AspectStack fromNbt(@Nonnull CompoundTag tag){
 		return new AspectStack(Aspects.ASPECTS.get(new ResourceLocation(tag.getString("aspect"))), tag.getFloat("amount"));
 	}
 	

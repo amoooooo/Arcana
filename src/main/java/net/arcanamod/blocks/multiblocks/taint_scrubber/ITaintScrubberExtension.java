@@ -1,8 +1,9 @@
 package net.arcanamod.blocks.multiblocks.taint_scrubber;
 
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.Level;
+
 
 public interface ITaintScrubberExtension{
 	
@@ -15,7 +16,7 @@ public interface ITaintScrubberExtension{
 	 * 		Position of extension
 	 * @return If an extension is in a correct position.
 	 */
-	boolean isValidConnection(World world, BlockPos pos);
+	boolean isValidConnection(Level world, BlockPos pos);
 	
 	/**
 	 * Called by a taint scrubber that this extension is connected to.
@@ -25,7 +26,7 @@ public interface ITaintScrubberExtension{
 	 * @param pos
 	 * 		Position of extension
 	 */
-	void sendUpdate(World world, BlockPos pos);
+	void sendUpdate(Level world, BlockPos pos);
 	
 	/**
 	 * Runs extension action.
@@ -35,7 +36,7 @@ public interface ITaintScrubberExtension{
 	 * @param pos
 	 * 		Position of extension
 	 */
-	void run(World world, BlockPos pos, CompoundNBT compound);
+	void run(Level world, BlockPos pos, CompoundTag compound);
 	
-	CompoundNBT getShareableData(CompoundNBT compound);
+	CompoundTag getShareableData(CompoundTag compound);
 }

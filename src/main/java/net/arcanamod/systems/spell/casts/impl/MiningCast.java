@@ -6,25 +6,26 @@ import net.arcanamod.aspects.AspectUtils;
 import net.arcanamod.aspects.Aspects;
 import net.arcanamod.systems.spell.SpellValues;
 import net.arcanamod.systems.spell.casts.Cast;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.enchantment.Enchantment;
-import net.minecraft.enchantment.EnchantmentHelper;
-import net.minecraft.enchantment.Enchantments;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.fluid.FluidState;
-import net.minecraft.item.IItemTier;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.PickaxeItem;
-import net.minecraft.item.crafting.Ingredient;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.PickaxeItem;
+import net.minecraft.world.item.Tier;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.FluidState;
 
 import java.util.HashMap;
 
@@ -58,72 +59,72 @@ public class MiningCast extends Cast {
 	}
 
 	@Override
-	public ActionResultType useOnPlayer(PlayerEntity playerTarget) {
-		playerTarget.sendStatusMessage(new TranslationTextComponent("status.arcana.invalid_spell"), true);
-		return ActionResultType.FAIL;
+	public InteractionResult useOnPlayer(Player playerTarget) {
+		playerTarget.displayClientMessage(new TranslatableComponent("status.arcana.invalid_spell"), true);
+		return InteractionResult.FAIL;
 	}
 
 	@Override
-	public ActionResultType useOnEntity(PlayerEntity caster, Entity entityTarget) {
-		caster.sendStatusMessage(new TranslationTextComponent("status.arcana.invalid_spell"), true);
-		return ActionResultType.FAIL;
+	public InteractionResult useOnEntity(Player caster, Entity entityTarget) {
+		caster.displayClientMessage(new TranslatableComponent("status.arcana.invalid_spell"), true);
+		return InteractionResult.FAIL;
 	}
 
 	@SuppressWarnings("deprecation")
-	public ActionResultType useOnBlock(PlayerEntity caster, World world, BlockPos blockTarget) {
-		if(caster.world.isRemote) return ActionResultType.SUCCESS;
-		BlockState blockToDestroy = caster.world.getBlockState(blockTarget);
-		if (blockToDestroy.getHarvestLevel() <= getMiningLevel() && blockToDestroy.getBlockHardness(world,blockTarget) != -1 && blockTarget.getY() != 0) {
+	public InteractionResult useOnBlock(Player caster, Level world, BlockPos blockTarget) {
+		if(caster.level.isClientSide) return InteractionResult.SUCCESS;
+		BlockState blockToDestroy = caster.level.getBlockState(blockTarget);
+		if (blockToDestroy.canHarvestBlock(world, blockTarget, caster) && blockToDestroy.getDestroySpeed(world, blockTarget) != -1 && blockTarget.getY() != 0) {
 			// Spawn block_break particles
-			world.playEvent(2001, blockTarget, Block.getStateId(blockToDestroy));
+			world.levelEvent(2001, blockTarget, Block.getId(blockToDestroy));
 
 			// Check of it has tile entity
-			TileEntity tileentity = blockToDestroy.hasTileEntity() ? world.getTileEntity(blockTarget) : null;
+			BlockEntity tileentity = blockToDestroy.hasBlockEntity() ? world.getBlockEntity(blockTarget) : null;
 
 			// Create dummy Pickaxe with enchantments and mining level
 			HashMap<Enchantment, Integer> map = new HashMap<>();
-			map.put(Enchantments.FORTUNE,getFortune());
+			map.put(Enchantments.BLOCK_FORTUNE,getFortune());
 			ItemStack pickaxe = createDummyPickaxe(getMiningLevel());
 			EnchantmentHelper.setEnchantments(map,pickaxe);
 
 			// Spawn drops and destroy block.
-			Block.spawnDrops(blockToDestroy, world, blockTarget, tileentity, caster, pickaxe);
+			Block.getDrops(blockToDestroy, (ServerLevel) world, blockTarget, tileentity, caster, pickaxe); // Cast should not be there...
 			FluidState ifluidstate = blockToDestroy.getBlock().getFluidState(blockToDestroy);
-			world.setBlockState(blockTarget, ifluidstate.getBlockState(), 3);
-			blockToDestroy.updateNeighbours(caster.world, blockTarget,3);
+			world.setBlock(blockTarget, ifluidstate.createLegacyBlock(), 3);
+			blockToDestroy.updateNeighbourShapes(caster.level, blockTarget,3);
 		}
-		return ActionResultType.SUCCESS;
+		return InteractionResult.SUCCESS;
 	}
 
 	private ItemStack createDummyPickaxe(int miningLevel) { // TODO: Check if it works
-		return new ItemStack(new PickaxeItem(new IItemTier() {
+		return new ItemStack(new PickaxeItem(new Tier() {
 			@Override
-			public int getMaxUses() {
+			public int getUses() {
 				return 1;
 			}
 
 			@Override
-			public float getEfficiency() {
+			public float getSpeed() {
 				return 1;
 			}
 
 			@Override
-			public float getAttackDamage() {
+			public float getAttackDamageBonus() {
 				return 1;
 			}
 
 			@Override
-			public int getHarvestLevel() {
+			public int getLevel() {
 				return miningLevel;
 			}
 
 			@Override
-			public int getEnchantability() {
+			public int getEnchantmentValue() {
 				return 0;
 			}
 
 			@Override
-			public Ingredient getRepairMaterial() {
+			public Ingredient getRepairIngredient() {
 				return null;
 			}
 		},0,0,new Item.Properties()),1);

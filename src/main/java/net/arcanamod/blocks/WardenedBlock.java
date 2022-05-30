@@ -1,21 +1,21 @@
 package net.arcanamod.blocks;
 
-import net.arcanamod.blocks.tiles.WardenedBlockTileEntity;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.item.ItemStack;
-import net.minecraft.loot.LootContext;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.IBlockReader;
-import net.minecraft.world.IWorld;
+import net.arcanamod.blocks.tiles.WardenedBlockBlockEntity;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.loot.LootContext;
 
 import javax.annotation.Nullable;
 import java.util.List;
 
-public class WardenedBlock extends Block {
-	protected WardenedBlockTileEntity t;
+public class WardenedBlock extends Block implements EntityBlock {
+	protected WardenedBlockBlockEntity t;
 
 	public WardenedBlock(Block.Properties properties) {
 		super(properties);
@@ -23,24 +23,24 @@ public class WardenedBlock extends Block {
 
 	@Nullable
 	@Override
-	public TileEntity createTileEntity(BlockState state, IBlockReader world) {
-		t = new WardenedBlockTileEntity();
+	public BlockEntity newBlockEntity(BlockPos pos, BlockState state){
+		t = new WardenedBlockBlockEntity(pos, state);
 		return t;
 	}
 
-	@Override
-	public boolean hasTileEntity(BlockState state) {
-		return true;
-	}
+//	@Override
+//	public boolean hasTileEntity(BlockState state) {
+//		return true;
+//	}
 
 	@Override
 	public List<ItemStack> getDrops(BlockState state, LootContext.Builder builder) {
-		if (t != null) return t.getState().orElse(Blocks.AIR.getDefaultState()).getBlock().getDrops(state, builder); else return super.getDrops(state, builder);
+		if (t != null) return t.getState().orElse(Blocks.AIR.defaultBlockState()).getBlock().getDrops(state, builder); else return super.getDrops(state, builder);
 	}
 
 	@Override
-	public void onPlayerDestroy(IWorld worldIn, BlockPos pos, BlockState state) {
-		super.onPlayerDestroy(worldIn, pos, state);
+	public void destroy(LevelAccessor worldIn, BlockPos pos, BlockState state) {
+		super.destroy(worldIn, pos, state);
 		//worldIn.setBlockState(pos,t.getState().orElse(Blocks.AIR.getDefaultState()),3);
 	}
 }

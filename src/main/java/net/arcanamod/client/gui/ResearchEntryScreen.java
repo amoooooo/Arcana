@@ -3,6 +3,10 @@ package net.arcanamod.client.gui;
 import com.google.common.collect.Lists;
 import com.mojang.blaze3d.matrix.MatrixStack;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Matrix4f;
+import com.mojang.math.Transformation;
+import com.mojang.math.Vector3f;
 import net.arcanamod.ArcanaConfig;
 import net.arcanamod.capabilities.Researcher;
 import net.arcanamod.client.research.EntrySectionRenderer;
@@ -14,12 +18,19 @@ import net.arcanamod.systems.research.EntrySection;
 import net.arcanamod.systems.research.Pin;
 import net.arcanamod.systems.research.Requirement;
 import net.arcanamod.systems.research.ResearchEntry;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.client.renderer.*;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.client.util.InputMappings;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.vector.Matrix4f;
 import net.minecraft.util.math.vector.TransformationMatrix;
@@ -27,6 +38,8 @@ import net.minecraft.util.math.vector.Vector3f;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TextFormatting;
+import net.minecraftforge.client.gui.GuiUtils;
+import net.minecraftforge.common.model.TransformationHelper;
 import net.minecraftforge.fml.client.gui.GuiUtils;
 import net.minecraftforge.fml.client.gui.widget.ExtendedButton;
 
@@ -62,17 +75,17 @@ public class ResearchEntryScreen extends Screen {
 	public static float TEXT_SCALING = ArcanaConfig.BOOK_TEXT_SCALING.get().floatValue();
 	
 	public ResearchEntryScreen(ResearchEntry entry, Screen parentScreen){
-		super(new StringTextComponent(""));
+		super(new TextComponent(""));
 		this.entry = entry;
 		this.parentScreen = parentScreen;
 		bg = new ResourceLocation(entry.key().getNamespace(), "textures/gui/research/" + entry.category().book().getPrefix() + SUFFIX);
 	}
 	
-	public void render(MatrixStack stack,  int mouseX, int mouseY, float partialTicks){
+	public void render(PoseStack stack, int mouseX, int mouseY, float partialTicks){
 		renderBackground(stack);
 		super.render(stack, mouseX, mouseY, partialTicks);
-		getMinecraft().getTextureManager().bindTexture(bg);
-		RenderSystem.color4f(1f, 1f, 1f, 1f);
+		getMinecraft().getTextureManager().bindForSetup(bg);
+		RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
 		drawTexturedModalRect(stack, (width - 256) / 2, (height - 181) / 2 + HEIGHT_OFFSET, 0, 0, 256, 181);
 		
 		// Main rendering
@@ -96,20 +109,20 @@ public class ResearchEntryScreen extends Screen {
 			final int baseX = (width / 2) - (reqWidth * requirements.size() / 2);
 			for(int i = 0, size = requirements.size(); i < size; i++){
 				Requirement requirement = requirements.get(i);
-				renderer(requirement).render(stack, baseX + i * reqWidth + 2, y, requirement, getMinecraft().player.ticksExisted, partialTicks, getMinecraft().player);
+				renderer(requirement).render(stack, baseX + i * reqWidth + 2, y, requirement, getMinecraft().player.tickCount, partialTicks, getMinecraft().player);
 				renderAmount(stack, requirement, baseX + i * reqWidth + 2, y, requirement.getAmount(), requirement.satisfied(getMinecraft().player));
 			}
 			// Show tooltips
 			for(int i = 0, size = requirements.size(); i < size; i++)
 				if(mouseX >= 20 * i + baseX + 2 && mouseX <= 20 * i + baseX + 18 && mouseY >= y && mouseY <= y + 18){
-					List<ITextComponent> tooltip = renderer(requirements.get(i)).tooltip(requirements.get(i), getMinecraft().player);
+					List<MutableComponent> tooltip = renderer(requirements.get(i)).tooltip(requirements.get(i), getMinecraft().player);
 					List<String> lines = new ArrayList<>();
 					for(int i1 = 0, tooltipSize = tooltip.size(); i1 < tooltipSize; i1++){
 						String s = tooltip.get(i1).getString();
-						s = (i1 == 0 ? TextFormatting.WHITE : TextFormatting.GRAY) + s;
+						s = (i1 == 0 ? ChatFormatting.WHITE : ChatFormatting.GRAY) + s;
 						lines.add(s);
 					}
-					GuiUtils.drawHoveringText(stack, lines.stream().map(StringTextComponent::new).collect(Collectors.toList()), mouseX, mouseY, width, height, -1, getMinecraft().fontRenderer);
+					Gui.draw(stack, lines.stream().map(TextComponent::new).collect(Collectors.toList()), mouseX, mouseY, width, height, -1, getMinecraft().fontRenderer);
 					break;
 				}
 		}
@@ -304,11 +317,11 @@ public class ResearchEntryScreen extends Screen {
 		return RequirementRenderer.get(requirement);
 	}
 	
-	private void renderAmount(MatrixStack stack, Requirement requirement, int x, int y, int amount, boolean complete){
+	private void renderAmount(PoseStack stack, Requirement requirement, int x, int y, int amount, boolean complete){
 		if(renderer(requirement).shouldDrawTickOrCross(requirement, amount)){
 			//display tick or cross
-			getMinecraft().getTextureManager().bindTexture(bg);
-			RenderSystem.color4f(1f, 1f, 1f, 1f);
+			getMinecraft().getTextureManager().bindForSetup(bg);
+			RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
 			// ensure it renders over items
 			setBlitOffset(300);
 			drawTexturedModalRect(stack, x + 10, y + 9, complete ? 0 : 8, 247, 8, 9);
@@ -316,9 +329,9 @@ public class ResearchEntryScreen extends Screen {
 		}else{
 			String s = String.valueOf(amount);
 			IRenderTypeBuffer.Impl buffer = IRenderTypeBuffer.getImpl(Tessellator.getInstance().getBuffer());
-			Matrix4f matrix = TransformationMatrix.identity().getMatrix();
+			Matrix4f matrix = Transformation.identity().getMatrix();
 			matrix.translate(new Vector3f(0, 0, 300));
-			getMinecraft().fontRenderer.renderString(s, (float)(x + 17 - getMinecraft().fontRenderer.getStringWidth(s)), (float)(y + 9), complete ? 0xaaffaa : 0xffaaaa, true, matrix, buffer, false, 0, 15728880);
+			getMinecraft().font.drawInBatch(s, (float)(x + 17 - getMinecraft().font.width(s)), (float)(y + 9), complete ? 0xaaffaa : 0xffaaaa, true, matrix, buffer, false, 0, 15728880);
 			buffer.finish();
 		}
 	}

@@ -1,6 +1,6 @@
 package net.arcanamod.systems.research.impls;
 
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.resources.ResourceLocation;
 
 public class CraftingSection extends AbstractCraftingSection{
 	

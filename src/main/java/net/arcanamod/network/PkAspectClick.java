@@ -3,11 +3,11 @@ package net.arcanamod.network;
 import net.arcanamod.aspects.Aspect;
 import net.arcanamod.aspects.AspectUtils;
 import net.arcanamod.aspects.Aspects;
-import net.arcanamod.containers.AspectContainer;
+import net.arcanamod.containers.AspectMenu;
 import net.arcanamod.containers.slots.AspectSlot;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.network.NetworkEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -31,25 +31,25 @@ public class PkAspectClick{
 		this.expectedAspect = expectedAspect;
 	}
 	
-	public static void encode(PkAspectClick msg, PacketBuffer buffer){
+	public static void encode(PkAspectClick msg, FriendlyByteBuf buffer){
 		buffer.writeInt(msg.windowId);
 		buffer.writeInt(msg.slotId);
-		buffer.writeEnumValue(msg.type);
-		buffer.writeString(msg.expectedAspect.name());
+		buffer.writeEnum(msg.type);
+		buffer.writeUtf(msg.expectedAspect.name());
 	}
 	
-	public static PkAspectClick decode(PacketBuffer buffer){
-		return new PkAspectClick(buffer.readInt(), buffer.readInt(), buffer.readEnumValue(ClickType.class), AspectUtils.getAspectByName(buffer.readString()));
+	public static PkAspectClick decode(FriendlyByteBuf buffer){
+		return new PkAspectClick(buffer.readInt(), buffer.readInt(), buffer.readEnum(ClickType.class), AspectUtils.getAspectByName(buffer.readUtf()));
 	}
 	
 	public static void handle(PkAspectClick msg, Supplier<NetworkEvent.Context> supplier){
 		// on server
 		supplier.get().enqueueWork(() -> {
-			ServerPlayerEntity spe = supplier.get().getSender();
-			if(spe.openContainer.windowId == msg.windowId){
+			ServerPlayer spe = supplier.get().getSender();
+			if(spe.containerMenu.containerId == msg.windowId){
 				// decrease/increase whats held on the server
 				// send back a PktAspectClickConfirmed with new heldAspect and new heldCount for client
-				AspectContainer container = (AspectContainer)spe.openContainer;
+				AspectMenu container = (AspectMenu)spe.containerMenu;
 				if(container.getAspectSlots().size() > msg.slotId){
 					AspectSlot slot = container.getAspectSlots().get(msg.slotId);
 					if(slot.getAspect() == null)
@@ -91,7 +91,7 @@ public class PkAspectClick{
 		supplier.get().setPacketHandled(true);
 	}
 	
-	private static float syncAndGet(AspectSlot s, float d, int windowId, int slotId, ClickType type, ServerPlayerEntity spe, boolean isDrain){
+	private static float syncAndGet(AspectSlot s, float d, int windowId, int slotId, ClickType type, ServerPlayer spe, boolean isDrain){
 		float temp = isDrain ? s.drain(s.getAspect(), d) : s.insert(s.getAspect(), d);
 		Connection.sendClientSlotDrain(windowId, slotId, type, spe);
 		return temp;

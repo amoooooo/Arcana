@@ -1,6 +1,8 @@
 package net.arcanamod.util;
 
-import net.minecraft.util.math.MathHelper;
+import com.mojang.math.Vector3d;
+import net.minecraft.util.Mth;
+import net.minecraft.util.math.Mth;
 import net.minecraft.util.math.vector.Vector2f;
 import net.minecraft.util.math.vector.Vector3d;
 
@@ -10,12 +12,12 @@ public final class LocalAxis{
 	
 	// Adapted from LookingPosArgument::toAbsolutePos (Yarn names)
 	public static Vector3d toAbsolutePos(Vector3d localPos, Vector2f rotation, Vector3d worldPos){
-		float yCos = MathHelper.cos((rotation.y + 90) * .017453292F);
-		float ySin = MathHelper.sin((rotation.y + 90) * .017453292F);
-		float xCos = MathHelper.cos(-rotation.x * .017453292F);
-		float xSin = MathHelper.sin(-rotation.x * .017453292F);
-		float a = MathHelper.cos((-rotation.x + 90) * .017453292F);
-		float b = MathHelper.sin((-rotation.x + 90) * .017453292F);
+		float yCos = Mth.cos((rotation.y + 90) * .017453292F);
+		float ySin = Mth.sin((rotation.y + 90) * .017453292F);
+		float xCos = Mth.cos(-rotation.x * .017453292F);
+		float xSin = Mth.sin(-rotation.x * .017453292F);
+		float a = Mth.cos((-rotation.x + 90) * .017453292F);
+		float b = Mth.sin((-rotation.x + 90) * .017453292F);
 		Vector3d vec3d2 = new Vector3d(yCos * xCos, xSin, ySin * xCos);
 		Vector3d vec3d3 = new Vector3d(yCos * a, b, ySin * a);
 		Vector3d vec3d4 = vec3d2.crossProduct(vec3d3).scale(-1);

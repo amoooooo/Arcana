@@ -1,24 +1,24 @@
 package net.arcanamod.blocks;
 
-import mcp.MethodsReturnNonnullByDefault;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.DyeItem;
-import net.minecraft.item.Item;
-import net.minecraft.particles.BasicParticleType;
-import net.minecraft.particles.ParticleTypes;
-import net.minecraft.state.IntegerProperty;
-import net.minecraft.state.StateContainer;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.BlockRayTraceResult;
-import net.minecraft.util.math.shapes.ISelectionContext;
-import net.minecraft.util.math.shapes.VoxelShape;
-import net.minecraft.util.math.shapes.VoxelShapes;
-import net.minecraft.world.IBlockReader;
-import net.minecraft.world.World;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.particles.SimpleParticleType;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.DyeItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.IntegerProperty;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.Random;
@@ -26,28 +26,28 @@ import java.util.Random;
 @SuppressWarnings("deprecation")
 @ParametersAreNonnullByDefault
 @MethodsReturnNonnullByDefault
-public class NitorBlock extends Block{
-	protected static final VoxelShape SHAPE = Block.makeCuboidShape(6, 6, 6, 10, 10, 10);
+public class NitorBlock extends Block {
+	protected static final VoxelShape SHAPE = Block.box(6, 6, 6, 10, 10, 10);
 	public static final IntegerProperty COLOUR = IntegerProperty.create("colour", 0, 15);
 	
 	public NitorBlock(Properties properties){
 		super(properties);
-		this.setDefaultState(this.stateContainer.getBaseState().with(COLOUR, 1));
+		this.registerDefaultState(this.getStateDefinition().any().setValue(COLOUR, 1));
 	}
 	
-	public VoxelShape getShape(BlockState state, IBlockReader world, BlockPos pos, ISelectionContext context){
+	public VoxelShape getShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context){
 		return SHAPE;
 	}
 	
-	public VoxelShape getCollisionShape(BlockState state, IBlockReader world, BlockPos pos, ISelectionContext context){
-		return VoxelShapes.empty();
+	public VoxelShape getCollisionShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context){
+		return Shapes.empty();
 	}
 	
-	public VoxelShape getRenderShape(BlockState state, IBlockReader world, BlockPos pos){
-		return VoxelShapes.empty();
+	public VoxelShape getRenderShape(BlockState state, BlockGetter world, BlockPos pos){
+		return Shapes.empty();
 	}
 
-	public void animateTick(BlockState state, World world, BlockPos pos, Random rand){
+	public void animateTick(BlockState state, Level world, BlockPos pos, Random rand){
 		// add a bunch of fire
 		double x = pos.getX() + .5;
 		double y = pos.getY() + .5;
@@ -60,71 +60,38 @@ public class NitorBlock extends Block{
 		}
 	}
 
-	private BasicParticleType getColour(BlockState state) {
-		BasicParticleType colour = ParticleTypes.CRIT;
-		switch(state.get(COLOUR)) {
-			case 0:
-				colour = ParticleTypes.SPIT;
-				break;
-			case 1:
-				colour = ParticleTypes.FLAME;
-				break;
-			case 2:
-				colour = ParticleTypes.PORTAL;
-				break;
-			case 3:
-				colour = ParticleTypes.BUBBLE;
-				break;
-			case 4:
-				colour = ParticleTypes.LANDING_HONEY;
-				break;
-			case 5:
-				colour = ParticleTypes.SNEEZE;
-				break;
-			case 6:
-				colour = ParticleTypes.HEART;
-				break;
-			case 7:
-				colour = ParticleTypes.SMOKE;
-				break;
-			case 8:
-				colour = ParticleTypes.CAMPFIRE_COSY_SMOKE;
-				break;
-			case 9:
-				colour = ParticleTypes.SPLASH;
-				break;
-			case 10:
-				colour = ParticleTypes.DRAGON_BREATH;
-				break;
-			case 11:
-				colour = ParticleTypes.NAUTILUS;
-				break;
-			case 12:
-				colour = ParticleTypes.MYCELIUM;
-				break;
-			case 13:
-				colour = ParticleTypes.ITEM_SLIME;
-				break;
-			case 14:
-				colour = ParticleTypes.LAVA;
-				break;
-			case 15:
-				colour = ParticleTypes.SQUID_INK;
-				break;
-		}
-		return colour;
+	private SimpleParticleType getColor(BlockState state) {
+		return switch (state.getValue(COLOUR)) {
+			case 0 -> ParticleTypes.SPIT;
+			case 1 -> ParticleTypes.FLAME;
+			case 2 -> ParticleTypes.PORTAL;
+			case 3 -> ParticleTypes.BUBBLE;
+			case 4 -> ParticleTypes.LANDING_HONEY;
+			case 5 -> ParticleTypes.SNEEZE;
+			case 6 -> ParticleTypes.HEART;
+			case 7 -> ParticleTypes.SMOKE;
+			case 8 -> ParticleTypes.CAMPFIRE_COSY_SMOKE;
+			case 9 -> ParticleTypes.SPLASH;
+			case 10 -> ParticleTypes.DRAGON_BREATH;
+			case 11 -> ParticleTypes.NAUTILUS;
+			case 12 -> ParticleTypes.MYCELIUM;
+			case 13 -> ParticleTypes.ITEM_SLIME;
+			case 14 -> ParticleTypes.LAVA;
+			case 15 -> ParticleTypes.SQUID_INK;
+			default -> ParticleTypes.CRIT;
+		};
 	}
 
 	@Override
-	public ActionResultType onBlockActivated(BlockState state, World worldIn, BlockPos pos, PlayerEntity player, Hand handIn, BlockRayTraceResult hit) {
-		Item item = player.getHeldItem(handIn).getItem();
-		if (player.getHeldItem(handIn).getItem() instanceof DyeItem) {
-			worldIn.setBlockState(pos, state.with(COLOUR, ((DyeItem) item).getDyeColor().getId()));
+	public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
+		Item item = player.getItemInHand(handIn).getItem();
+		if (player.getItemInHand(handIn).getItem() instanceof DyeItem) {
+			worldIn.setBlockAndUpdate(pos, state.setValue(COLOUR, ((DyeItem) item).getDyeColor().getId()));
 		}
-		return super.onBlockActivated(state, worldIn, pos, player, handIn, hit);
+		return super.use(state, worldIn, pos, player, handIn, hit);
 	}
 
-	protected void fillStateContainer(StateContainer.Builder<Block, BlockState> builder) {
+	protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
 		builder.add(COLOUR);
 	}
 }

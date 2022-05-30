@@ -1,20 +1,20 @@
 package net.arcanamod.items;
 
-import mcp.MethodsReturnNonnullByDefault;
 import net.arcanamod.capabilities.Researcher;
 import net.arcanamod.network.Connection;
 import net.arcanamod.network.PkModifyResearch;
 import net.arcanamod.systems.research.ResearchBooks;
-import net.minecraft.client.util.ITooltipFlag;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.World;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.level.Level;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -22,27 +22,29 @@ import java.util.List;
 
 @MethodsReturnNonnullByDefault
 @ParametersAreNonnullByDefault
-public class CheatersResearchBookItem extends ResearchBookItem{
+public class CheatersResearchBookItem extends ResearchBookItem {
 	
-	public CheatersResearchBookItem(Properties properties, ResourceLocation book){
+	public CheatersResearchBookItem(Properties properties, ResourceLocation book) {
 		super(properties, book);
 	}
-	
-	public ActionResult<ItemStack> onItemRightClick(World world, PlayerEntity player, Hand hand){
+
+	@Override
+	public InteractionResultHolder<ItemStack> use(Level world, Player player, InteractionHand hand){
 		// also grant all research
-		if(!world.isRemote() && player instanceof ServerPlayerEntity)
+		if(!world.isClientSide() && player instanceof ServerPlayer)
 			ResearchBooks.streamEntries().forEach(entry -> {
 				Researcher from = Researcher.getFrom(player);
 				if(from != null && !entry.meta().contains("locked")){
 					from.completeEntry(entry);
-					Connection.sendModifyResearch(PkModifyResearch.Diff.complete, entry.key(), (ServerPlayerEntity)player);
+					Connection.sendModifyResearch(PkModifyResearch.Diff.complete, entry.key(), (ServerPlayer)player);
 				}
 			});
-		return super.onItemRightClick(world, player, hand);
+		return super.use(world, player, hand);
 	}
-	
-	public void addInformation(ItemStack stack, @Nullable World world, List<ITextComponent> tooltip, ITooltipFlag flag){
-		super.addInformation(stack, world, tooltip, flag);
-		tooltip.add(new TranslationTextComponent("item.arcana.cheaters_arcanum.desc"));
+
+	@Override
+	public void appendHoverText(ItemStack stack, @Nullable Level world, List<Component> tooltip, TooltipFlag flag){
+		super.appendHoverText(stack, world, tooltip, flag);
+		tooltip.add(new TranslatableComponent("item.arcana.cheaters_arcanum.desc"));
 	}
 }

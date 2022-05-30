@@ -1,12 +1,11 @@
 package net.arcanamod.aspects.handlers;
 
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.INBT;
-import net.minecraft.nbt.ListNBT;
-import net.minecraft.util.Direction;
+import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
-import net.minecraftforge.common.util.Constants;
 import net.minecraftforge.common.util.LazyOptional;
 
 import javax.annotation.Nonnull;
@@ -22,19 +21,19 @@ public class AspectBattery implements AspectHandler, ICapabilityProvider{
 		return holders;
 	}
 	
-	public CompoundNBT serializeNBT(){
-		CompoundNBT compound = new CompoundNBT();
-		ListNBT storedCells = new ListNBT();
+	public CompoundTag serializeNBT(){
+		CompoundTag compound = new CompoundTag();
+		ListTag storedCells = new ListTag();
 		holders.forEach(holder -> storedCells.add(holder.serializeNBT()));
 		compound.put("holders", storedCells);
 		return compound;
 	}
 	
-	public void deserializeNBT(CompoundNBT data){
-		ListNBT cells = data.getList("holders", Constants.NBT.TAG_COMPOUND);
+	public void deserializeNBT(CompoundTag data){
+		ListTag cells = data.getList("holders", Tag.TAG_COMPOUND);
 		holders.clear();
-		for(INBT icell : cells){
-			AspectCell cell = AspectCell.fromNbt((CompoundNBT)icell);
+		for(Tag icell : cells){
+			AspectCell cell = AspectCell.fromNbt((CompoundTag)icell);
 			holders.add(cell);
 		}
 	}

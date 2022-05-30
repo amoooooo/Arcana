@@ -1,19 +1,19 @@
 package net.arcanamod.items.tools;
 
-import mcp.MethodsReturnNonnullByDefault;
 import net.arcanamod.systems.taint.Taint;
-import net.minecraft.block.BlockState;
-import net.minecraft.item.AxeItem;
-import net.minecraft.item.IItemTier;
-import net.minecraft.item.ItemStack;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.world.item.AxeItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Tier;
+import net.minecraft.world.level.block.state.BlockState;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
 @ParametersAreNonnullByDefault
 @MethodsReturnNonnullByDefault
-public class SilverAxeItem extends AxeItem{
+public class SilverAxeItem extends AxeItem {
 	
-	public SilverAxeItem(IItemTier tier, float attackDamage, float attackSpeed, Properties builder){
+	public SilverAxeItem(Tier tier, float attackDamage, float attackSpeed, Properties builder){
 		super(tier, attackDamage, attackSpeed, builder);
 	}
 	

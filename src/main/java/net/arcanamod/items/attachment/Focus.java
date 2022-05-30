@@ -2,11 +2,10 @@ package net.arcanamod.items.attachment;
 
 import net.arcanamod.Arcana;
 import net.arcanamod.systems.spell.Spell;
-import net.arcanamod.systems.spell.casts.ICast;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,7 +48,7 @@ public interface Focus{
 	 *
 	 * @return The focus model.
 	 */
-	ResourceLocation getModelLocation(CompoundNBT nbt);
+	ResourceLocation getModelLocation(CompoundTag nbt);
 	
 	/**
 	 * Returns a list of resource locations for every model that this focus might add to a wand model.
@@ -82,20 +81,20 @@ public interface Focus{
 	class Impl implements Focus{
 		
 		List<ResourceLocation> modelLocations;
-		ToIntFunction<CompoundNBT> modelChooser = __ -> 0;
+		ToIntFunction<CompoundTag> modelChooser = __ -> 0;
 		
 		public Impl(ResourceLocation... modelLocations){
 			this.modelLocations = Arrays.asList(modelLocations);
 			FOCI.add(this);
 		}
 		
-		public Impl(ToIntFunction<CompoundNBT> modelChooser, ResourceLocation... modelLocations){
+		public Impl(ToIntFunction<CompoundTag> modelChooser, ResourceLocation... modelLocations){
 			this.modelChooser = modelChooser;
 			this.modelLocations = Arrays.asList(modelLocations);
 			FOCI.add(this);
 		}
 		
-		public ResourceLocation getModelLocation(CompoundNBT nbt){
+		public ResourceLocation getModelLocation(CompoundTag nbt){
 			return modelLocations.get(modelChooser.applyAsInt(nbt));
 		}
 		

@@ -1,15 +1,15 @@
 package net.arcanamod.systems.spell.casts.impl;
 
 import net.arcanamod.ArcanaVariables;
-import net.arcanamod.util.NotImplementedException;
 import net.arcanamod.aspects.Aspect;
 import net.arcanamod.systems.spell.casts.Cast;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.arcanamod.util.NotImplementedException;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 
 import static net.arcanamod.aspects.Aspects.ENERGY;
 
@@ -20,17 +20,17 @@ public class EnergyCast extends Cast {
 	}
 
 	@Override
-	public ActionResultType useOnBlock(PlayerEntity caster, World world, BlockPos blockTarget) {
+	public InteractionResult useOnBlock(Player caster, Level world, BlockPos blockTarget) {
 		throw new NotImplementedException();
 	}
 
 	@Override
-	public ActionResultType useOnPlayer(PlayerEntity playerTarget) {
+	public InteractionResult useOnPlayer(Player playerTarget) {
 		throw new NotImplementedException();
 	}
 
 	@Override
-	public ActionResultType useOnEntity(PlayerEntity caster, Entity entityTarget) {
+	public InteractionResult useOnEntity(Player caster, Entity entityTarget) {
 		throw new NotImplementedException();
 	}
 

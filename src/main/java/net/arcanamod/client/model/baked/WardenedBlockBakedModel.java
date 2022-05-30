@@ -1,20 +1,32 @@
 package net.arcanamod.client.model.baked;
 
 import com.google.common.collect.ImmutableList;
+import com.mojang.blaze3d.vertex.VertexFormatElement;
+import com.mojang.math.Vector3d;
+import net.arcanamod.blocks.tiles.WardenedBlockBlockEntity;
 import net.arcanamod.blocks.tiles.WardenedBlockTileEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BlockRendererDispatcher;
+import net.minecraft.client.renderer.block.BlockRenderDispatcher;
+import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.client.renderer.block.model.ItemOverrides;
 import net.minecraft.client.renderer.model.BakedQuad;
 import net.minecraft.client.renderer.model.IBakedModel;
 import net.minecraft.client.renderer.model.ItemCameraTransforms;
 import net.minecraft.client.renderer.model.ItemOverrideList;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.vertex.VertexFormatElement;
+import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.IBlockDisplayReader;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.model.data.IModelData;
 import net.minecraftforge.client.model.data.ModelDataMap;
 import net.minecraftforge.client.model.data.ModelProperty;
@@ -29,8 +41,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
-public class WardenedBlockBakedModel implements IBakedModel {
-	public WardenedBlockBakedModel(IBakedModel unCamouflagedModel)
+public class WardenedBlockBakedModel implements BakedModel {
+	public WardenedBlockBakedModel(BakedModel unCamouflagedModel)
 	{
 		modelWhenNotCamouflaged = unCamouflagedModel;
 	}
@@ -62,8 +74,8 @@ public class WardenedBlockBakedModel implements IBakedModel {
 				case UV:
 					switch (e.getIndex()) {
 						case 0:
-							float iu = sprite.getInterpolatedU(u);
-							float iv = sprite.getInterpolatedV(v);
+							float iu = sprite.getU(u);
+							float iv = sprite.getV(v);
 							builder.put(j, iu, iv);
 							break;
 						case 2:
@@ -90,7 +102,7 @@ public class WardenedBlockBakedModel implements IBakedModel {
 		int th = sprite.getHeight();
 
 		BakedQuadBuilder builder = new BakedQuadBuilder(sprite);
-		builder.setQuadOrientation(Direction.getFacingFromVector(normal.x, normal.y, normal.z));
+		builder.setQuadOrientation(Direction.getNearest(normal.x, normal.y, normal.z));
 		putVertex(builder, normal, v1.x, v1.y, v1.z, 0, 0, sprite, 1.0f, 1.0f, 1.0f);
 		putVertex(builder, normal, v2.x, v2.y, v2.z, 0, th, sprite, 1.0f, 1.0f, 1.0f);
 		putVertex(builder, normal, v3.x, v3.y, v3.z, tw, th, sprite, 1.0f, 1.0f, 1.0f);
@@ -117,37 +129,43 @@ public class WardenedBlockBakedModel implements IBakedModel {
 	{
 		double l = -.001;
 		double r = 1+.001;
-		ArrayList<BakedQuad> ql = (ArrayList<BakedQuad>) (Object) (Object) ((ArrayList<BakedQuad>) getActualBakedModelFromIModelData(extraData).getQuads(state, side, rand)).clone(); // Casting object to object removes crashes when spell used on some blocks. but why?
+		ArrayList<BakedQuad> ql =	(ArrayList<BakedQuad>)
+									(Object)
+									(Object)
+									(
+										(ArrayList<BakedQuad>) getActualBakedModelFromIModelData(extraData)
+												.getQuads(state, side, rand)
+									).clone(); // Casting object to object removes crashes when spell used on some blocks. but why?
 		if (extraData.hasProperty(HOLDING_SPELL)&& extraData.getData(HOLDING_SPELL)) {
-			ql.add(createQuad(v(l, r, l), v(l, r, r), v(r, r, r), v(r, r, l), modelWhenNotCamouflaged.getParticleTexture()));
-			ql.add(createQuad(v(l, l, l), v(r, l, l), v(r, l, r), v(l, l, r), modelWhenNotCamouflaged.getParticleTexture()));
-			ql.add(createQuad(v(r, r, r), v(r, l, r), v(r, l, l), v(r, r, l), modelWhenNotCamouflaged.getParticleTexture()));
-			ql.add(createQuad(v(l, r, l), v(l, l, l), v(l, l, r), v(l, r, r), modelWhenNotCamouflaged.getParticleTexture()));
-			ql.add(createQuad(v(r, r, l), v(r, l, l), v(l, l, l), v(l, r, l), modelWhenNotCamouflaged.getParticleTexture()));
-			ql.add(createQuad(v(l, r, r), v(l, l, r), v(r, l, r), v(r, r, r), modelWhenNotCamouflaged.getParticleTexture()));
+			ql.add(createQuad(v(l, r, l), v(l, r, r), v(r, r, r), v(r, r, l), modelWhenNotCamouflaged.getParticleIcon()));
+			ql.add(createQuad(v(l, l, l), v(r, l, l), v(r, l, r), v(l, l, r), modelWhenNotCamouflaged.getParticleIcon()));
+			ql.add(createQuad(v(r, r, r), v(r, l, r), v(r, l, l), v(r, r, l), modelWhenNotCamouflaged.getParticleIcon()));
+			ql.add(createQuad(v(l, r, l), v(l, l, l), v(l, l, r), v(l, r, r), modelWhenNotCamouflaged.getParticleIcon()));
+			ql.add(createQuad(v(r, r, l), v(r, l, l), v(l, l, l), v(l, r, l), modelWhenNotCamouflaged.getParticleIcon()));
+			ql.add(createQuad(v(l, r, r), v(l, l, r), v(r, l, r), v(r, r, r), modelWhenNotCamouflaged.getParticleIcon()));
 		}
 		return ql;
 	}
 
 	@Override
 	@Nonnull
-	public IModelData getModelData(@Nonnull IBlockDisplayReader world, @Nonnull BlockPos pos, @Nonnull BlockState state, @Nonnull IModelData tileData)
+	public IModelData getModelData(@Nonnull BlockGetter world, @Nonnull BlockPos pos, @Nonnull BlockState state, @Nonnull IModelData tileData)
 	{
-		Optional<BlockState> bestAdjacentBlock = ((WardenedBlockTileEntity)world.getTileEntity(pos)).getState();
+		Optional<BlockState> bestAdjacentBlock = ((WardenedBlockBlockEntity)world.getBlockEntity(pos)).getState();
 		ModelDataMap modelDataMap = getEmptyIModelData();
 		modelDataMap.setData(COPIED_BLOCK, bestAdjacentBlock);
-		modelDataMap.setData(HOLDING_SPELL, ((WardenedBlockTileEntity)world.getTileEntity(pos)).isHoldingWand());
+		modelDataMap.setData(HOLDING_SPELL, ((WardenedBlockBlockEntity)world.getBlockEntity(pos)).isHoldingWand());
 		return modelDataMap;
 	}
 
 	@Override
-	public TextureAtlasSprite getParticleTexture(@Nonnull IModelData data)
+	public TextureAtlasSprite getParticleIcon(@Nonnull IModelData data)
 	{
-		return getActualBakedModelFromIModelData(data).getParticleTexture();
+		return getActualBakedModelFromIModelData(data).getParticleIcon();
 	}
 
-	private IBakedModel getActualBakedModelFromIModelData(@Nonnull IModelData data) {
-		IBakedModel retval = modelWhenNotCamouflaged;  // default
+	private BakedModel getActualBakedModelFromIModelData(@Nonnull IModelData data) {
+		BakedModel retval = modelWhenNotCamouflaged;  // default
 		if (!data.hasProperty(COPIED_BLOCK)) {
 			if (!loggedError) {
 				LOGGER.error("IModelData did not have expected property COPIED_BLOCK");
@@ -159,12 +177,12 @@ public class WardenedBlockBakedModel implements IBakedModel {
 		if (!copiedBlock.isPresent()) return retval;
 
 		Minecraft mc = Minecraft.getInstance();
-		BlockRendererDispatcher blockRendererDispatcher = mc.getBlockRendererDispatcher();
-		retval = blockRendererDispatcher.getModelForState(copiedBlock.get());
+		BlockRenderDispatcher blockRendererDispatcher = mc.getBlockRenderer();
+		retval = blockRendererDispatcher.getBlockModel(copiedBlock.get());
 		return retval.getBakedModel();
 	}
 
-	private IBakedModel modelWhenNotCamouflaged;
+	private BakedModel modelWhenNotCamouflaged;
 	private Boolean hasWand;
 
 
@@ -178,16 +196,16 @@ public class WardenedBlockBakedModel implements IBakedModel {
 	// getTexture is used directly when player is inside the block. The game will crash if you don't use something
 	//   meaningful here.
 	@Override
-	public TextureAtlasSprite getParticleTexture() {
-		return modelWhenNotCamouflaged.getParticleTexture();
+	public TextureAtlasSprite getParticleIcon() {
+		return modelWhenNotCamouflaged.getParticleIcon();
 	}
 
 
 	// ideally, this should be changed for different blocks being camouflaged, but this is not supported by vanilla or forge
 	@Override
-	public boolean isAmbientOcclusion()
+	public boolean usesBlockLight()
 	{
-		return modelWhenNotCamouflaged.isAmbientOcclusion();
+		return modelWhenNotCamouflaged.usesBlockLight();
 	}
 
 	@Override
@@ -195,28 +213,33 @@ public class WardenedBlockBakedModel implements IBakedModel {
 	{
 		return modelWhenNotCamouflaged.isGui3d();
 	}
-	
-	public boolean isSideLit(){
-		return modelWhenNotCamouflaged.isSideLit();
-	}
-	
+
+//	public boolean isSideLit(){
+//		return modelWhenNotCamouflaged.isSideLit();
+//	}
+
 	@Override
-	public boolean isBuiltInRenderer()
-	{
-		return modelWhenNotCamouflaged.isBuiltInRenderer();
+	public boolean useAmbientOcclusion() {
+		return modelWhenNotCamouflaged.useAmbientOcclusion();
 	}
 
 	@Override
-	public ItemOverrideList getOverrides()
+	public boolean isCustomRenderer()
+	{
+		return modelWhenNotCamouflaged.isCustomRenderer();
+	}
+
+	@Override
+	public ItemOverrides getOverrides()
 	{
 		return modelWhenNotCamouflaged.getOverrides();
 	}
 
-	@Override
-	public ItemCameraTransforms getItemCameraTransforms()
-	{
-		return modelWhenNotCamouflaged.getItemCameraTransforms();
-	}
+//	@Override
+//	public ItemCameraTransforms getItemCameraTransforms()
+//	{
+//		return modelWhenNotCamouflaged.getItemCameraTransforms();
+//	}
 
 	private static final Logger LOGGER = LogManager.getLogger();
 	private static boolean loggedError = false; // prevent spamming console

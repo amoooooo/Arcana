@@ -1,57 +1,57 @@
 package net.arcanamod.client.render.tiles;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
-import com.mojang.blaze3d.vertex.IVertexBuilder;
-import mcp.MethodsReturnNonnullByDefault;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.math.Quaternion;
 import net.arcanamod.Arcana;
 import net.arcanamod.ArcanaConfig;
-import net.arcanamod.blocks.tiles.JarTileEntity;
+import net.arcanamod.blocks.tiles.JarBlockEntity;
+import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.IRenderTypeBuffer;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.texture.AtlasTexture;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
+import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.renderer.tileentity.TileEntityRenderer;
-import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
-import net.minecraft.util.Direction;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.vector.Quaternion;
+import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 import java.awt.*;
 
 @ParametersAreNonnullByDefault
 @MethodsReturnNonnullByDefault
-public class JarTileEntityRender extends TileEntityRenderer<JarTileEntity>{
+public class JarTileEntityRender implements BlockEntityRenderer<JarBlockEntity> {
 	public static final ResourceLocation JAR_CONTENT_TOP = new ResourceLocation(Arcana.MODID, "models/parts/fluid_top");
 	public static final ResourceLocation JAR_CONTENT_SIDE = new ResourceLocation(Arcana.MODID, "models/parts/fluid_side");
 	public static final ResourceLocation JAR_CONTENT_BOTTOM = new ResourceLocation(Arcana.MODID, "models/parts/fluid_bottom");
 	public static final ResourceLocation JAR_LABEL = new ResourceLocation(Arcana.MODID, "models/parts/jar_label");
 	
-	public JarTileEntityRender(TileEntityRendererDispatcher rendererDispatcherIn){
-		super(rendererDispatcherIn);
+	public JarTileEntityRender(BlockEntityRendererProvider.Context pContext){
+		// ???
 	}
 	
-	private void add(IVertexBuilder renderer, MatrixStack stack, Color color, float x, float y, float z, float u, float v, int lightmap){
-		renderer.pos(stack.getLast().getMatrix(), x, y, z)
+	private void add(VertexConsumer renderer, PoseStack stack, Color color, float x, float y, float z, float u, float v, int lightmap){
+		renderer.vertex(stack.last().pose(), x, y, z)
 				.color(color.getRed() / 255f, color.getGreen() / 255f, color.getBlue() / 255f, color.getAlpha() / 255f)
-				.tex(u, v)
-				.lightmap(lightmap)
+				.uv(u, v)
+				.uv2(lightmap)
 				.normal(1, 0, 0)
 				.endVertex();
 	}
 	
 	@SuppressWarnings("deprecation")
 	@Override
-	public void render(JarTileEntity tileEntity, float partialTicks, MatrixStack matrixStack, IRenderTypeBuffer buffer, int combinedLight, int combinedOverlay){
+	public void render(JarBlockEntity tileEntity, float partialTicks, PoseStack matrixStack, MultiBufferSource buffer, int combinedLight, int combinedOverlay){
 
-		TextureAtlasSprite spriteTop = Minecraft.getInstance().getAtlasSpriteGetter(AtlasTexture.LOCATION_BLOCKS_TEXTURE).apply(JAR_CONTENT_TOP);
-		TextureAtlasSprite spriteSide = Minecraft.getInstance().getAtlasSpriteGetter(AtlasTexture.LOCATION_BLOCKS_TEXTURE).apply(JAR_CONTENT_SIDE);
-		TextureAtlasSprite spriteBottom = Minecraft.getInstance().getAtlasSpriteGetter(AtlasTexture.LOCATION_BLOCKS_TEXTURE).apply(JAR_CONTENT_BOTTOM);
-		TextureAtlasSprite label = Minecraft.getInstance().getAtlasSpriteGetter(AtlasTexture.LOCATION_BLOCKS_TEXTURE).apply(JAR_LABEL);
-		TextureAtlasSprite aspect = Minecraft.getInstance().getAtlasSpriteGetter(AtlasTexture.LOCATION_BLOCKS_TEXTURE).apply(tileEntity.getPaperAspectLocation());
-		IVertexBuilder builder = buffer.getBuffer(RenderType.getTranslucent());
-		IVertexBuilder label_builder = buffer.getBuffer(RenderType.getCutout());
+		TextureAtlasSprite spriteTop = Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(JAR_CONTENT_TOP);
+		TextureAtlasSprite spriteSide = Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(JAR_CONTENT_SIDE);
+		TextureAtlasSprite spriteBottom = Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(JAR_CONTENT_BOTTOM);
+		TextureAtlasSprite label = Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(JAR_LABEL);
+		TextureAtlasSprite aspect = Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS).apply(tileEntity.getPaperAspectLocation());
+		VertexConsumer builder = buffer.getBuffer(RenderType.translucent());
+		VertexConsumer label_builder = buffer.getBuffer(RenderType.cutout());
 		
 		// 0-100
 		float visAmount = ArcanaConfig.NO_JAR_ANIMATION.get() ? tileEntity.vis.getHolder(0).getStack().getAmount() : (float) tileEntity.getClientVis(partialTicks);
@@ -66,7 +66,7 @@ public class JarTileEntityRender extends TileEntityRenderer<JarTileEntity>{
 
 		// label
 		if (labelSide != null){
-			matrixStack.push();
+			matrixStack.pushPose();
 
 			Quaternion q;
 			float xt, zt;
@@ -115,88 +115,88 @@ public class JarTileEntityRender extends TileEntityRenderer<JarTileEntity>{
 			}
 
 			matrixStack.scale(scale, scale, scale);
-			matrixStack.rotate(q);
+			matrixStack.mulPose(q);
 			matrixStack.translate(xt, .5f, zt);
 			
 			q = new Quaternion(tileEntity.label.renderRotation,0,0,true);
-			matrixStack.rotate(q);
+			matrixStack.mulPose(q);
 			matrixStack.translate(0,0,-(tileEntity.label.renderRotation/200f));
 
-			add(label_builder, matrixStack, Color.WHITE, 0, 1, 0, label.getMinU(), label.getMaxV(), combinedLight);
-			add(label_builder, matrixStack, Color.WHITE, 0, 0, 0, label.getMaxU(), label.getMaxV(), combinedLight);
-			add(label_builder, matrixStack, Color.WHITE, 0, 0, 1, label.getMaxU(), label.getMinV(), combinedLight);
-			add(label_builder, matrixStack, Color.WHITE, 0, 1, 1, label.getMinU(), label.getMinV(), combinedLight);
+			add(label_builder, matrixStack, Color.WHITE, 0, 1, 0, label.getU0(), label.getV1(), combinedLight);
+			add(label_builder, matrixStack, Color.WHITE, 0, 0, 0, label.getU1(), label.getV1(), combinedLight);
+			add(label_builder, matrixStack, Color.WHITE, 0, 0, 1, label.getU1(), label.getV0(), combinedLight);
+			add(label_builder, matrixStack, Color.WHITE, 0, 1, 1, label.getU0(), label.getV0(), combinedLight);
 
 			q = new Quaternion(180,180,0,true);
 			matrixStack.translate(0, 1, 0);
-			matrixStack.rotate(q);
-			add(label_builder, matrixStack, Color.WHITE, 0, 1, 0, label.getMinU(), label.getMaxV(), combinedLight);
-			add(label_builder, matrixStack, Color.WHITE, 0, 0, 0, label.getMaxU(), label.getMaxV(), combinedLight);
-			add(label_builder, matrixStack, Color.WHITE, 0, 0, 1, label.getMaxU(), label.getMinV(), combinedLight);
-			add(label_builder, matrixStack, Color.WHITE, 0, 1, 1, label.getMinU(), label.getMinV(), combinedLight);
-			matrixStack.rotate(q);
+			matrixStack.mulPose(q);
+			add(label_builder, matrixStack, Color.WHITE, 0, 1, 0, label.getU0(), label.getV1(), combinedLight);
+			add(label_builder, matrixStack, Color.WHITE, 0, 0, 0, label.getU1(), label.getV1(), combinedLight);
+			add(label_builder, matrixStack, Color.WHITE, 0, 0, 1, label.getU1(), label.getV0(), combinedLight);
+			add(label_builder, matrixStack, Color.WHITE, 0, 1, 1, label.getU0(), label.getV0(), combinedLight);
+			matrixStack.mulPose(q);
 			matrixStack.translate(0, -1, 0);
 
 			q = new Quaternion(-90,0,0,true);
-			matrixStack.rotate(q);
+			matrixStack.mulPose(q);
 			matrixStack.translate(xta,yta,zta);
 
 			scale = 0.8f;
 			matrixStack.scale(scale, scale, scale);
 			matrixStack.translate(-.002, -.002, -.002);
-			add(label_builder, matrixStack, Color.WHITE, 0, 1, 0, aspect.getMinU(), aspect.getMaxV(), combinedLight);
-			add(label_builder, matrixStack, Color.WHITE, 0, 0, 0, aspect.getMaxU(), aspect.getMaxV(), combinedLight);
-			add(label_builder, matrixStack, Color.WHITE, 0, 0, 1, aspect.getMaxU(), aspect.getMinV(), combinedLight);
-			add(label_builder, matrixStack, Color.WHITE, 0, 1, 1, aspect.getMinU(), aspect.getMinV(), combinedLight);
+			add(label_builder, matrixStack, Color.WHITE, 0, 1, 0, aspect.getU0(), aspect.getV1(), combinedLight);
+			add(label_builder, matrixStack, Color.WHITE, 0, 0, 0, aspect.getU1(), aspect.getV1(), combinedLight);
+			add(label_builder, matrixStack, Color.WHITE, 0, 0, 1, aspect.getU1(), aspect.getV0(), combinedLight);
+			add(label_builder, matrixStack, Color.WHITE, 0, 1, 1, aspect.getU0(), aspect.getV0(), combinedLight);
 
-			matrixStack.pop();
+			matrixStack.popPose();
 		}
 
 		scale = 0.5f;
 		if(visScaled > 0){
-			matrixStack.push();
+			matrixStack.pushPose();
 			matrixStack.scale(scale, scale, scale);
 			matrixStack.translate(.5, .5, .5);
 
 			Color c = new Color(aspectColor.getRGB()-0x80000000);
 			
 			// top
-			add(builder, matrixStack, c, 0, visHeight, 1, spriteTop.getMinU(), spriteTop.getMaxV(), combinedLight);
-			add(builder, matrixStack, c, 1, visHeight, 1, spriteTop.getMaxU(), spriteTop.getMaxV(), combinedLight);
-			add(builder, matrixStack, c, 1, visHeight, 0, spriteTop.getMaxU(), spriteTop.getMinV(), combinedLight);
-			add(builder, matrixStack, c, 0, visHeight, 0, spriteTop.getMinU(), spriteTop.getMinV(), combinedLight);
+			add(builder, matrixStack, c, 0, visHeight, 1, spriteTop.getU0(), spriteTop.getV1(), combinedLight);
+			add(builder, matrixStack, c, 1, visHeight, 1, spriteTop.getU1(), spriteTop.getV1(), combinedLight);
+			add(builder, matrixStack, c, 1, visHeight, 0, spriteTop.getU1(), spriteTop.getV0(), combinedLight);
+			add(builder, matrixStack, c, 0, visHeight, 0, spriteTop.getU0(), spriteTop.getV0(), combinedLight);
 			
 			// bottom
-			add(builder, matrixStack, c, 1, visBase, 1, spriteBottom.getMaxU(), spriteBottom.getMaxV(), combinedLight);
-			add(builder, matrixStack, c, 0, visBase, 1, spriteBottom.getMinU(), spriteBottom.getMaxV(), combinedLight);
-			add(builder, matrixStack, c, 0, visBase, 0, spriteBottom.getMinU(), spriteBottom.getMinV(), combinedLight);
-			add(builder, matrixStack, c, 1, visBase, 0, spriteBottom.getMaxU(), spriteBottom.getMinV(), combinedLight);
+			add(builder, matrixStack, c, 1, visBase, 1, spriteBottom.getU1(), spriteBottom.getV1(), combinedLight);
+			add(builder, matrixStack, c, 0, visBase, 1, spriteBottom.getU0(), spriteBottom.getV1(), combinedLight);
+			add(builder, matrixStack, c, 0, visBase, 0, spriteBottom.getU0(), spriteBottom.getV0(), combinedLight);
+			add(builder, matrixStack, c, 1, visBase, 0, spriteBottom.getU1(), spriteBottom.getV0(), combinedLight);
 			
 			// east (+X) face
-			add(builder, matrixStack, c, 1, visHeight, 0, spriteSide.getMinU(), spriteSide.getMinV(), combinedLight);
-			add(builder, matrixStack, c, 1, visHeight, 1, spriteSide.getMaxU(), spriteSide.getMinV(), combinedLight);
-			add(builder, matrixStack, c, 1, visBase, 1, spriteSide.getMaxU(), spriteSide.getMaxV(), combinedLight);
-			add(builder, matrixStack, c, 1, visBase, 0, spriteSide.getMinU(), spriteSide.getMaxV(), combinedLight);
+			add(builder, matrixStack, c, 1, visHeight, 0, spriteSide.getU0(), spriteSide.getV0(), combinedLight);
+			add(builder, matrixStack, c, 1, visHeight, 1, spriteSide.getU1(), spriteSide.getV0(), combinedLight);
+			add(builder, matrixStack, c, 1, visBase, 1, spriteSide.getU1(), spriteSide.getV1(), combinedLight);
+			add(builder, matrixStack, c, 1, visBase, 0, spriteSide.getU0(), spriteSide.getV1(), combinedLight);
 			
 			// west (-X) face
-			add(builder, matrixStack, c, 0, visHeight, 0, spriteSide.getMinU(), spriteSide.getMinV(), combinedLight);
-			add(builder, matrixStack, c, 0, visBase, 0, spriteSide.getMinU(), spriteSide.getMaxV(), combinedLight);
-			add(builder, matrixStack, c, 0, visBase, 1, spriteSide.getMaxU(), spriteSide.getMaxV(), combinedLight);
-			add(builder, matrixStack, c, 0, visHeight, 1, spriteSide.getMaxU(), spriteSide.getMinV(), combinedLight);
+			add(builder, matrixStack, c, 0, visHeight, 0, spriteSide.getU0(), spriteSide.getV0(), combinedLight);
+			add(builder, matrixStack, c, 0, visBase, 0, spriteSide.getU0(), spriteSide.getV1(), combinedLight);
+			add(builder, matrixStack, c, 0, visBase, 1, spriteSide.getU1(), spriteSide.getV1(), combinedLight);
+			add(builder, matrixStack, c, 0, visHeight, 1, spriteSide.getU1(), spriteSide.getV0(), combinedLight);
 			
 			// north (-Z) face
-			add(builder, matrixStack, c, 1, visBase, 0, spriteSide.getMaxU(), spriteSide.getMaxV(), combinedLight);
-			add(builder, matrixStack, c, 0, visBase, 0, spriteSide.getMinU(), spriteSide.getMaxV(), combinedLight);
-			add(builder, matrixStack, c, 0, visHeight, 0, spriteSide.getMinU(), spriteSide.getMinV(), combinedLight);
-			add(builder, matrixStack, c, 1, visHeight, 0, spriteSide.getMaxU(), spriteSide.getMinV(), combinedLight);
+			add(builder, matrixStack, c, 1, visBase, 0, spriteSide.getU1(), spriteSide.getV1(), combinedLight);
+			add(builder, matrixStack, c, 0, visBase, 0, spriteSide.getU0(), spriteSide.getV1(), combinedLight);
+			add(builder, matrixStack, c, 0, visHeight, 0, spriteSide.getU0(), spriteSide.getV0(), combinedLight);
+			add(builder, matrixStack, c, 1, visHeight, 0, spriteSide.getU1(), spriteSide.getV0(), combinedLight);
 			
 			// north (+Z) face
-			add(builder, matrixStack, c, 0, visBase, 1, spriteSide.getMinU(), spriteSide.getMaxV(), combinedLight);
-			add(builder, matrixStack, c, 1, visBase, 1, spriteSide.getMaxU(), spriteSide.getMaxV(), combinedLight);
-			add(builder, matrixStack, c, 1, visHeight, 1, spriteSide.getMaxU(), spriteSide.getMinV(), combinedLight);
-			add(builder, matrixStack, c, 0, visHeight, 1, spriteSide.getMinU(), spriteSide.getMinV(), combinedLight);
+			add(builder, matrixStack, c, 0, visBase, 1, spriteSide.getU0(), spriteSide.getV1(), combinedLight);
+			add(builder, matrixStack, c, 1, visBase, 1, spriteSide.getU1(), spriteSide.getV1(), combinedLight);
+			add(builder, matrixStack, c, 1, visHeight, 1, spriteSide.getU1(), spriteSide.getV0(), combinedLight);
+			add(builder, matrixStack, c, 0, visHeight, 1, spriteSide.getU0(), spriteSide.getV0(), combinedLight);
 
-			matrixStack.pop();
+			matrixStack.popPose();
 		}
 	}
 }

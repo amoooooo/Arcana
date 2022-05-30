@@ -1,13 +1,13 @@
 package net.arcanamod.systems.spell.modules.circle;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.arcanamod.aspects.Aspect;
 import net.arcanamod.aspects.AspectUtils;
 import net.arcanamod.aspects.Aspects;
 import net.arcanamod.client.gui.ClientUiUtil;
 import net.arcanamod.systems.spell.modules.SpellModule;
-import net.minecraft.client.renderer.ItemRenderer;
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.client.renderer.entity.ItemRenderer;
+import net.minecraft.nbt.CompoundTag;
 
 import java.util.Arrays;
 
@@ -25,13 +25,13 @@ public class SinModifierCircle extends SpellModule {
 	}
 
 	@Override
-	public void fromNBT(CompoundNBT compound) {
+	public void fromNBT(CompoundTag compound) {
 		super.fromNBT(compound);
 		aspect = AspectUtils.getAspect(compound, "aspect");
 	}
 
 	@Override
-	public CompoundNBT toNBT(CompoundNBT compound) {
+	public CompoundTag toNBT(CompoundTag compound) {
 		super.toNBT(compound);
 		AspectUtils.putAspect(compound, "aspect", aspect);
 		return compound;
@@ -77,23 +77,23 @@ public class SinModifierCircle extends SpellModule {
 	}
 
 	@Override
-	public void renderUnderMouse(int mouseX, int mouseY, ItemRenderer itemRenderer, boolean floating, MatrixStack stack) {
+	public void renderUnderMouse(int mouseX, int mouseY, ItemRenderer itemRenderer, boolean floating, PoseStack stack) {
 		ClientUiUtil.drawTexturedModalRect(stack, mouseX - getWidth() / 2, mouseY - getHeight() / 2, 0, 128, getWidth(), getHeight());
 		if (!floating || aspect == Aspects.EMPTY) {
 			ClientUiUtil.drawTexturedModalRect(stack, mouseX - 8, mouseY - 55, 64, 0, 16, 16);
 		} else {
-			itemRenderer.renderItemAndEffectIntoGUI(AspectUtils.getItemStackForAspect(aspect), mouseX - 8, mouseY - 55);
+			itemRenderer.renderGuiItem(AspectUtils.getItemStackForAspect(aspect), mouseX - 8, mouseY - 55);
 		}
 	}
 
 	@Override
-	public void renderInMinigame(int mouseX, int mouseY, ItemRenderer itemRenderer, boolean floating, MatrixStack stack) {
+	public void renderInMinigame(int mouseX, int mouseY, ItemRenderer itemRenderer, boolean floating, PoseStack stack) {
 		ClientUiUtil.drawTexturedModalRect(stack, x - getWidth() / 2, y - getHeight() / 2, 0, 128, getWidth(), getHeight());
 		if (!floating) {
 			if (aspect == Aspects.EMPTY) {
 				ClientUiUtil.drawTexturedModalRect(stack, x - 8, y - 55, 64, 0, 16, 16);
 			} else {
-				itemRenderer.renderItemAndEffectIntoGUI(AspectUtils.getItemStackForAspect(aspect), x - 8, y - 55);
+				itemRenderer.renderGuiItem(AspectUtils.getItemStackForAspect(aspect), x - 8, y - 55);
 			}
 		}
 	}

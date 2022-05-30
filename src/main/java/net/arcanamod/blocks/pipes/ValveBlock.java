@@ -1,22 +1,22 @@
 package net.arcanamod.blocks.pipes;
 
-import mcp.MethodsReturnNonnullByDefault;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.particles.RedstoneParticleData;
-import net.minecraft.tileentity.TileEntity;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.Direction;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.BlockRayTraceResult;
-import net.minecraft.world.IBlockReader;
-import net.minecraft.world.IWorld;
-import net.minecraft.world.World;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.particles.DustParticleOptions;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.common.util.Constants;
 
 import javax.annotation.Nullable;
 import javax.annotation.ParametersAreNonnullByDefault;
@@ -27,54 +27,54 @@ import java.util.Random;
 @MethodsReturnNonnullByDefault
 public class ValveBlock extends TubeBlock{
 	
-	public ValveBlock(Properties properties){
+	public ValveBlock(BlockBehaviour.Properties properties){
 		super(properties);
 	}
 	
 	@Nullable
 	@Override
-	public TileEntity createTileEntity(BlockState state, IBlockReader world){
-		return new ValveTileEntity();
+	public BlockEntity newBlockEntity(BlockPos pos, BlockState state){
+		return new ValveBlockEntity(pos, state);
 	}
 	
-	public ActionResultType onBlockActivated(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockRayTraceResult raytrace){
-		TileEntity te = world.getTileEntity(pos);
-		if(te instanceof ValveTileEntity){
-			ValveTileEntity valve = (ValveTileEntity)te;
+	public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult raytrace){
+		BlockEntity te = world.getBlockEntity(pos);
+		if(te instanceof ValveBlockEntity){
+			ValveBlockEntity valve = (ValveBlockEntity) te;
 			valve.setEnabledAndNotify(!valve.enabledByHand());
-			return ActionResultType.SUCCESS;
+			return InteractionResult.SUCCESS;
 		}
-		return super.onBlockActivated(state, world, pos, player, hand, raytrace);
+		return super.use(state, world, pos, player, hand, raytrace);
 	}
 	
-	public void neighborChanged(BlockState state, World world, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving){
+	public void neighborChanged(BlockState state, Level world, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving){
 		super.neighborChanged(state, world, pos, block, fromPos, isMoving);
-		if(!world.isRemote()){
-			TileEntity te = world.getTileEntity(pos);
-			if(te instanceof ValveTileEntity){
-				ValveTileEntity valve = (ValveTileEntity)te;
-				valve.setSuppressedByRedstone(world.isBlockPowered(pos));
-				valve.markDirty();
-				world.notifyBlockUpdate(pos, state, state, Constants.BlockFlags.BLOCK_UPDATE);
+		if(!world.isClientSide()){
+			BlockEntity te = world.getBlockEntity(pos);
+			if(te instanceof ValveBlockEntity){
+				ValveBlockEntity valve = (ValveBlockEntity) te;
+				valve.setSuppressedByRedstone(world.hasNeighborSignal(pos));
+				valve.setChanged();
+				world.sendBlockUpdated(pos, state, state, 4);
 			}
 		}
 	}
 	
 	@OnlyIn(Dist.CLIENT)
-	public void animateTick(BlockState stateIn, World world, BlockPos pos, Random rand){
-		TileEntity te = world.getTileEntity(pos);
-		if(te instanceof ValveTileEntity && ((ValveTileEntity)te).isSuppressedByRedstone() && rand.nextFloat() < 0.25F)
+	public void animateTick(BlockState stateIn, Level world, BlockPos pos, Random rand){
+		BlockEntity te = world.getBlockEntity(pos);
+		if(te instanceof ValveBlockEntity && ((ValveBlockEntity)te).isSuppressedByRedstone() && rand.nextFloat() < 0.25F)
 			addParticles(world, pos);
 	}
 	
-	private static void addParticles(IWorld world, BlockPos pos){
+	private static void addParticles(LevelAccessor world, BlockPos pos){
 		double x = (double)pos.getX() + .5;
 		double y = (double)pos.getY() + 1;
 		double z = (double)pos.getZ() + .5;
-		world.addParticle(RedstoneParticleData.REDSTONE_DUST, x, y, z, 0.0D, 0.0D, 0.0D);
+		world.addParticle(DustParticleOptions.REDSTONE, x, y, z, 0.0D, 0.0D, 0.0D);
 	}
 	
-	public boolean canConnectRedstone(BlockState state, IBlockReader world, BlockPos pos, @Nullable Direction side){
+	public boolean canConnectRedstone(BlockState state, BlockGetter world, BlockPos pos, @Nullable Direction side){
 		return true;
 	}
 }

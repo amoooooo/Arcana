@@ -1,5 +1,6 @@
 package net.arcanamod.client.event;
 
+import com.mojang.math.Vector3d;
 import net.arcanamod.ArcanaSounds;
 import net.arcanamod.aspects.Aspect;
 import net.arcanamod.aspects.AspectStack;
@@ -14,7 +15,7 @@ import net.arcanamod.client.render.particles.AspectParticleData;
 import net.arcanamod.client.render.particles.NumberParticleData;
 import net.arcanamod.items.ArcanaItems;
 import net.arcanamod.items.settings.GogglePriority;
-import net.arcanamod.mixin.AccessorMinecraft;
+import net.arcanamod.items.attachment.mixin.AccessorMinecraft;
 import net.arcanamod.util.LocalAxis;
 import net.arcanamod.util.Pair;
 import net.arcanamod.util.RayTraceUtils;
@@ -23,14 +24,23 @@ import net.arcanamod.world.Node;
 import net.arcanamod.world.NodeType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.player.ClientPlayerEntity;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Hand;
+import net.minecraft.util.Mth;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.World;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.event.TickEvent;
@@ -41,6 +51,7 @@ import net.minecraftforge.fml.common.Mod;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 @Mod.EventBusSubscriber(Dist.CLIENT)
@@ -68,7 +79,7 @@ public class ClientTickHandler{
 		if(event.phase == TickEvent.Phase.START){
 			partialTicks = event.renderTickTime;
 
-			if(mc.isGamePaused()){
+			if(mc.isPaused()){
 				// If game is paused, need to use the saved value. The event is always fired with the "true" value which
 				// keeps updating when paused. See RenderTickEvent fire site for details, remove when MinecraftForge#6991 is resolved
 				partialTicks = ((AccessorMinecraft)mc).getRenderPartialTicksPaused();
@@ -81,25 +92,25 @@ public class ClientTickHandler{
 	@SubscribeEvent(priority = EventPriority.NORMAL)
 	public static void clientTickEnd(TickEvent.ClientTickEvent event){
 		Minecraft mc = Minecraft.getInstance();
-		World world = mc.world;
-		ClientPlayerEntity player = mc.player;
+		ClientLevel world = mc.level;
+		LocalPlayer player = mc.player;
 
 		if(player != null && world != null){
 			if(event.phase == TickEvent.Phase.END){
-				if(!Minecraft.getInstance().isGamePaused()){
+				if(!Minecraft.getInstance().isPaused()){
 					ticksInGame++;
 					partialTicks = 0;
 
 					int ticksToOpen = 10;
 
-					Hand hand = null;
-					if(player.getHeldItem(Hand.MAIN_HAND).getItem() == ArcanaItems.ARCANUM.get())
-						hand = Hand.MAIN_HAND;
-					if(player.getHeldItem(Hand.OFF_HAND).getItem() == ArcanaItems.ARCANUM.get())
-						hand = Hand.OFF_HAND;
+					InteractionHand hand = null;
+					if(player.getItemInHand(InteractionHand.MAIN_HAND).getItem() == ArcanaItems.ARCANUM.get())
+						hand = InteractionHand.MAIN_HAND;
+					if(player.getItemInHand(InteractionHand.OFF_HAND).getItem() == ArcanaItems.ARCANUM.get())
+						hand = InteractionHand.OFF_HAND;
 
 					if(hand != null)
-						if(player.getHeldItem(hand).getOrCreateTag().getBoolean("open")){
+						if(player.getItemInHand(hand).getOrCreateTag().getBoolean("open")){
 							if(ticksWithLexicaOpen < 0){
 								ticksWithLexicaOpen = 0;
 							}
@@ -122,25 +133,25 @@ public class ClientTickHandler{
 
 				double reach = player.getAttribute(ForgeMod.REACH_DISTANCE.get()).getValue();
 				BlockPos pos = RayTraceUtils.getTargetBlockPos(player, world, (int)reach);
-				TileEntity te = world.getTileEntity(pos);
+				BlockEntity te = world.getBlockEntity(pos);
 				GogglePriority priority = GogglePriority.getClientGogglePriority();
 
-				AuraView view = AuraView.SIDED_FACTORY.apply(player.world);
-				Collection<Node> nodes = view.getNodesWithinAABB(player.getBoundingBox().grow(8));
+				AuraView view = AuraView.SIDED_FACTORY.apply(player.level);
+				Collection<Node> nodes = view.getNodesWithinAABB(player.getBoundingBox().inflate(8));
 				// Play node sounds
 				if (!nodes.isEmpty()) {
 					NodeType type = ((Node) nodes.toArray()[0]).type();
 					if (type == NodeType.HUNGRY)
-						ArcanaSounds.playSoundOnce(player, ArcanaSounds.Impl.arcana_hunger_node, SoundCategory.AMBIENT, 0.4f, 1.0f);
+						ArcanaSounds.playSoundOnce(player, ArcanaSounds.Impl.arcana_hunger_node, SoundSource.AMBIENT, 0.4f, 1.0f);
 					else if (type == NodeType.NORMAL || type == NodeType.BRIGHT || type == NodeType.PURE || type == NodeType.PALE)
-						ArcanaSounds.playSoundOnce(player, ArcanaSounds.Impl.arcananodes, SoundCategory.AMBIENT, 0.4f, 1.0f);
+						ArcanaSounds.playSoundOnce(player, ArcanaSounds.Impl.arcananodes, SoundSource.AMBIENT, 0.4f, 1.0f);
 					else
-						ArcanaSounds.playSoundOnce(player, ArcanaSounds.Impl.arcananodesnegative, SoundCategory.AMBIENT, 0.4f, 1.0f);
+						ArcanaSounds.playSoundOnce(player, ArcanaSounds.Impl.arcananodesnegative, SoundSource.AMBIENT, 0.4f, 1.0f);
 				}
 
 				// Render aspect particle around Node
 				if(priority == GogglePriority.SHOW_ASPECTS){
-					Vector3d position = player.getEyePosition(Minecraft.getInstance().getRenderPartialTicks());
+					Vec3 position = player.getEyePosition(Minecraft.getInstance().getDeltaFrameTime());
 					view.raycast(position, reach, player).ifPresent(node -> {
 						List<AspectHolder> holders = node.getAspects().getHolders();
 						ArrayList<Pair<Aspect, Float>> stacks = new ArrayList<>();
@@ -153,8 +164,8 @@ public class ClientTickHandler{
 							// then its as easy as picking positions on a circle
 							float angle = (float)(Math.toRadians(360 * i) / size);
 							// TODO: ease in/out (multiply by some fraction)
-							Vector3d localPos = new Vector3d(MathHelper.sin(angle) * (size / 5f), MathHelper.cos(angle) * (size / 5f), 0);
-							Vector3d wPos = LocalAxis.toAbsolutePos(localPos, player.getPitchYaw(), node.getPosition());
+							Vector3d localPos = new Vector3d(Mth.sin(angle) * (size / 5f), Mth.cos(angle) * (size / 5f), 0);
+							Vector3d wPos = LocalAxis.toAbsolutePos(localPos, player.get, node.getPosition());
 							// why?
 							world.addParticle(new AspectParticleData(new ResourceLocation(AspectUtils.getAspectTextureLocation(stack.getFirst()).toString().replace("textures/", "").replace(".png", ""))), wPos.getX(), wPos.getY(), wPos.getZ(), 0, 0, 0);
 							// TODO: client reference (UiUtil::tooltipColour)

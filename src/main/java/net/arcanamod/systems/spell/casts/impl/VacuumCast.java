@@ -5,19 +5,18 @@ import net.arcanamod.aspects.Aspect;
 import net.arcanamod.aspects.AspectUtils;
 import net.arcanamod.aspects.Aspects;
 import net.arcanamod.blocks.ArcanaBlocks;
-import net.arcanamod.blocks.tiles.VacuumTileEntity;
-import net.arcanamod.systems.spell.*;
+import net.arcanamod.blocks.tiles.VacuumBlockEntity;
+import net.arcanamod.systems.spell.SpellValues;
 import net.arcanamod.systems.spell.casts.Cast;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 
 public class VacuumCast extends Cast {
 
@@ -42,32 +41,30 @@ public class VacuumCast extends Cast {
     }
 
     @Override
-    public ActionResultType useOnBlock(PlayerEntity caster, World world, BlockPos blockTarget) {
-        if(caster.world.isRemote) return ActionResultType.SUCCESS;
-        BlockPos.getAllInBoxMutable(blockTarget.add(
-                -Math.floor(getWidth(caster)),
-                -Math.floor(getWidth(caster)),
-                -Math.floor(getWidth(caster))),
-                blockTarget.offset(caster.getHorizontalFacing(),getDistance(caster)).add(
+    public InteractionResult useOnBlock(Player caster, Level world, BlockPos blockTarget) {
+        if(caster.level.isClientSide) return InteractionResult.SUCCESS;
+        BlockPos.betweenClosed(
+                blockTarget.offset(-Math.floor(getWidth(caster)), -Math.floor(getWidth(caster)), -Math.floor(getWidth(caster))),
+                blockTarget.relative(caster.getDirection(), getDistance(caster)).offset(
                         Math.floor(getWidth(caster)),
                         Math.floor(getWidth(caster)),
                         Math.floor(getWidth(caster)))).forEach(blockPos -> {
             Block blockToReplace = world.getBlockState(blockTarget).getBlock();
             if (blockToReplace != Blocks.AIR && blockToReplace != Blocks.CAVE_AIR) {
-                BlockState vaccumBlock = ArcanaBlocks.VACUUM_BLOCK.get().getDefaultState();
-                world.setBlockState(blockTarget, vaccumBlock);
-                ((VacuumTileEntity)world.getTileEntity(blockTarget)).setDuration(getDuration(caster));
-                ((VacuumTileEntity)world.getTileEntity(blockTarget)).setOriginBlock(blockToReplace.getDefaultState());
+                BlockState vaccumBlock = ArcanaBlocks.VACUUM_BLOCK.get().defaultBlockState();
+                world.setBlockAndUpdate(blockTarget, vaccumBlock);
+                ((VacuumBlockEntity)world.getBlockEntity(blockTarget)).setDuration(getDuration(caster));
+                ((VacuumBlockEntity)world.getBlockEntity(blockTarget)).setOriginBlock(blockToReplace.defaultBlockState());
             }
         });
-        return ActionResultType.SUCCESS;
+        return InteractionResult.SUCCESS;
     }
 
-    protected int getWidth(PlayerEntity playerEntity) {
+    protected int getWidth(Player playerEntity) {
         return SpellValues.getOrDefault(AspectUtils.getAspect(data,"sinModifier"), 1);
     }
 
-    protected int getDistance(PlayerEntity playerEntity) {
+    protected int getDistance(Player playerEntity) {
         return SpellValues.getOrDefault(AspectUtils.getAspect(data,"secondModifier"), 16);
     }
 
@@ -75,53 +72,53 @@ public class VacuumCast extends Cast {
      * Gets Vacuum blocks duration from modifiers
      * @return Vacuum blocks duration
      */
-    protected int getDuration(PlayerEntity playerEntity) {
+    protected int getDuration(Player playerEntity) {
         return (1+SpellValues.getOrDefault(AspectUtils.getAspect(data,"firstModifier"), 0))*100;
     }
 
     @Override
-    public ActionResultType useOnPlayer(PlayerEntity playerTarget) {
+    public InteractionResult useOnPlayer(Player playerTarget) {
         //playerTarget.sendStatusMessage(new TranslationTextComponent("status.arcana.invalid_spell"), true);
-        BlockPos pos = playerTarget.getPosition().down();
-        BlockPos.getAllInBoxMutable(pos.add(
+        BlockPos pos = playerTarget.getOnPos().below();
+        BlockPos.betweenClosed(pos.offset(
                 -Math.floor(getWidth(playerTarget)),
                 -Math.floor(getWidth(playerTarget)),
                 -Math.floor(getWidth(playerTarget))),
-                pos.offset(playerTarget.getHorizontalFacing(),getDistance(playerTarget)).add(
+                pos.relative(playerTarget.getDirection(),getDistance(playerTarget)).offset(
                         Math.floor(getWidth(playerTarget)),
                         Math.floor(getWidth(playerTarget)),
                         Math.floor(getWidth(playerTarget)))).forEach(blockPos -> {
-            Block blockToReplace = playerTarget.world.getBlockState(pos).getBlock();
+            Block blockToReplace = playerTarget.level.getBlockState(pos).getBlock();
             if (blockToReplace != Blocks.AIR && blockToReplace != Blocks.CAVE_AIR) {
-                BlockState vaccumBlock = ArcanaBlocks.VACUUM_BLOCK.get().getDefaultState();
-                playerTarget.world.setBlockState(pos, vaccumBlock);
-                ((VacuumTileEntity)playerTarget.world.getTileEntity(pos)).setDuration(getDuration(playerTarget));
-                ((VacuumTileEntity)playerTarget.world.getTileEntity(pos)).setOriginBlock(blockToReplace.getDefaultState());
+                BlockState vaccumBlock = ArcanaBlocks.VACUUM_BLOCK.get().defaultBlockState();
+                playerTarget.level.setBlockAndUpdate(pos, vaccumBlock);
+                ((VacuumBlockEntity)playerTarget.level.getBlockEntity(pos)).setDuration(getDuration(playerTarget));
+                ((VacuumBlockEntity)playerTarget.level.getBlockEntity(pos)).setOriginBlock(blockToReplace.defaultBlockState());
             }
         });
-        return ActionResultType.FAIL;
+        return InteractionResult.FAIL;
     }
 
     @Override
-    public ActionResultType useOnEntity(PlayerEntity caster, Entity entityTarget) {
+    public InteractionResult useOnEntity(Player caster, Entity entityTarget) {
         //caster.sendStatusMessage(new TranslationTextComponent("status.arcana.invalid_spell"), true);
-        BlockPos pos = entityTarget.getPosition().down();
-        BlockPos.getAllInBoxMutable(pos.add(
+        BlockPos pos = entityTarget.getOnPos().below();
+        BlockPos.betweenClosed(pos.offset(
                 -Math.floor(getWidth(caster)),
                 -Math.floor(getWidth(caster)),
                 -Math.floor(getWidth(caster))),
-                pos.offset(caster.getHorizontalFacing(),getDistance(caster)).add(
+                pos.relative(caster.getDirection(),getDistance(caster)).offset(
                         Math.floor(getWidth(caster)),
                         Math.floor(getWidth(caster)),
                         Math.floor(getWidth(caster)))).forEach(blockPos -> {
-            Block blockToReplace = entityTarget.world.getBlockState(pos).getBlock();
+            Block blockToReplace = entityTarget.level.getBlockState(pos).getBlock();
             if (blockToReplace != Blocks.AIR && blockToReplace != Blocks.CAVE_AIR) {
-                BlockState vaccumBlock = ArcanaBlocks.VACUUM_BLOCK.get().getDefaultState();
-                entityTarget.world.setBlockState(pos, vaccumBlock);
-                ((VacuumTileEntity)entityTarget.world.getTileEntity(pos)).setDuration(getDuration(caster));
-                ((VacuumTileEntity)entityTarget.world.getTileEntity(pos)).setOriginBlock(blockToReplace.getDefaultState());
+                BlockState vaccumBlock = ArcanaBlocks.VACUUM_BLOCK.get().defaultBlockState();
+                entityTarget.level.setBlockAndUpdate(pos, vaccumBlock);
+                ((VacuumBlockEntity)entityTarget.level.getBlockEntity(pos)).setDuration(getDuration(caster));
+                ((VacuumBlockEntity)entityTarget.level.getBlockEntity(pos)).setOriginBlock(blockToReplace.defaultBlockState());
             }
         });
-        return ActionResultType.FAIL;
+        return InteractionResult.FAIL;
     }
 }

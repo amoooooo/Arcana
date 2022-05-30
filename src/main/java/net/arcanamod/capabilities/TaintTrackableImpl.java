@@ -1,6 +1,6 @@
 package net.arcanamod.capabilities;
 
-import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.CompoundTag;
 
 import javax.annotation.Nonnull;
 
@@ -37,15 +37,15 @@ public class TaintTrackableImpl implements TaintTrackable{
 		this.timeInTaintBiome += timeInTaintBiome;
 	}
 	
-	public CompoundNBT serializeNBT(){
-		CompoundNBT nbt = new CompoundNBT();
+	public CompoundTag serializeNBT(){
+		CompoundTag nbt = new CompoundTag();
 		nbt.putBoolean("tracking", isTracking());
 		nbt.putBoolean("inTaintBiome", inTaintBiome);
 		nbt.putInt("timeInTaintBiome", timeInTaintBiome);
 		return nbt;
 	}
 	
-	public void deserializeNBT(@Nonnull CompoundNBT data){
+	public void deserializeNBT(@Nonnull CompoundTag data){
 		tracking = data.getBoolean("tracking");
 		inTaintBiome = data.getBoolean("inTaintBiome");
 		timeInTaintBiome = data.getInt("timeInTaintBiome");

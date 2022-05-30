@@ -2,9 +2,9 @@ package net.arcanamod.network;
 
 import net.arcanamod.Arcana;
 import net.arcanamod.capabilities.Researcher;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.network.PacketBuffer;
-import net.minecraftforge.fml.network.NetworkEvent;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.network.NetworkEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -19,18 +19,18 @@ public class PkSyncPlayerResearch{
 	
 	// how about I just change this to use regular serialization methods...
 	
-	CompoundNBT data;
+	CompoundTag data;
 	
-	public PkSyncPlayerResearch(CompoundNBT nbt){
+	public PkSyncPlayerResearch(CompoundTag nbt){
 		data = nbt;
 	}
 	
-	public static void encode(PkSyncPlayerResearch msg, PacketBuffer buffer){
-		buffer.writeCompoundTag(msg.data);
+	public static void encode(PkSyncPlayerResearch msg, FriendlyByteBuf buffer){
+		buffer.writeNbt(msg.data);
 	}
 	
-	public static PkSyncPlayerResearch decode(PacketBuffer buffer){
-		return new PkSyncPlayerResearch(buffer.readCompoundTag());
+	public static PkSyncPlayerResearch decode(FriendlyByteBuf buffer){
+		return new PkSyncPlayerResearch(buffer.readNbt());
 	}
 	
 	public static void handle(PkSyncPlayerResearch msg, Supplier<NetworkEvent.Context> supplier){

@@ -1,10 +1,10 @@
 package net.arcanamod.systems.research;
 
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.ListNBT;
-import net.minecraft.nbt.StringNBT;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.world.World;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.Level;
 
 import java.util.Collections;
 import java.util.List;
@@ -83,45 +83,45 @@ public class ResearchEntry{
 		return y;
 	}
 	
-	public CompoundNBT serialize(ResourceLocation tag){
-		CompoundNBT nbt = new CompoundNBT();
+	public CompoundTag serialize(ResourceLocation tag){
+		CompoundTag Tag = new CompoundTag();
 		// key
-		nbt.putString("id", tag.toString());
+		Tag.putString("id", tag.toString());
 		// name, desc
-		nbt.putString("name", name());
-		nbt.putString("desc", description());
+		Tag.putString("name", name());
+		Tag.putString("desc", description());
 		// x, y
-		nbt.putInt("x", x());
-		nbt.putInt("y", y());
+		Tag.putInt("x", x());
+		Tag.putInt("y", y());
 		// sections
-		ListNBT list = new ListNBT();
+		ListTag list = new ListTag();
 		sections().forEach((section) -> list.add(section.getPassData()));
-		nbt.put("sections", list);
+		Tag.put("sections", list);
 		// icons
-		ListNBT icons = new ListNBT();
-		icons().forEach((icon) -> icons.add(StringNBT.valueOf(icon.toString())));
-		nbt.put("icons", icons);
+		ListTag icons = new ListTag();
+		icons().forEach((icon) -> icons.add(StringTag.valueOf(icon.toString())));
+		Tag.put("icons", icons);
 		// parents
-		ListNBT parents = new ListNBT();
-		parents().forEach((parent) -> parents.add(StringNBT.valueOf(parent.asString())));
-		nbt.put("parents", parents);
+		ListTag parents = new ListTag();
+		parents().forEach((parent) -> parents.add(StringTag.valueOf(parent.asString())));
+		Tag.put("parents", parents);
 		// meta
-		ListNBT meta = new ListNBT();
-		meta().forEach((met) -> meta.add(StringNBT.valueOf(met)));
-		nbt.put("meta", meta);
-		return nbt;
+		ListTag meta = new ListTag();
+		meta().forEach((met) -> meta.add(StringTag.valueOf(met)));
+		Tag.put("meta", meta);
+		return Tag;
 	}
 	
-	public static ResearchEntry deserialize(CompoundNBT nbt, ResearchCategory in){
-		ResourceLocation key = new ResourceLocation(nbt.getString("id"));
-		String name = nbt.getString("name");
-		String desc = nbt.getString("desc");
-		int x = nbt.getInt("x");
-		int y = nbt.getInt("y");
-		List<EntrySection> sections = streamAndApply(nbt.getList("sections", 10), CompoundNBT.class, EntrySection::deserialze).collect(Collectors.toList());
-		List<Parent> betterParents = streamAndApply(nbt.getList("parents", 8), StringNBT.class, StringNBT::getString).map(Parent::parse).collect(Collectors.toList());
-		List<Icon> icons = streamAndApply(nbt.getList("icons", 8), StringNBT.class, StringNBT::getString).map(Icon::fromString).collect(Collectors.toList());
-		List<String> meta = streamAndApply(nbt.getList("meta", 8), StringNBT.class, StringNBT::getString).collect(Collectors.toList());
+	public static ResearchEntry deserialize(CompoundTag Tag, ResearchCategory in){
+		ResourceLocation key = new ResourceLocation(Tag.getString("id"));
+		String name = Tag.getString("name");
+		String desc = Tag.getString("desc");
+		int x = Tag.getInt("x");
+		int y = Tag.getInt("y");
+		List<EntrySection> sections = streamAndApply(Tag.getList("sections", 10), CompoundTag.class, EntrySection::deserialze).collect(Collectors.toList());
+		List<Parent> betterParents = streamAndApply(Tag.getList("parents", 8), StringTag.class, StringTag::getAsString).map(Parent::parse).collect(Collectors.toList());
+		List<Icon> icons = streamAndApply(Tag.getList("icons", 8), StringTag.class, StringTag::getAsString).map(Icon::fromString).collect(Collectors.toList());
+		List<String> meta = streamAndApply(Tag.getList("meta", 8), StringTag.class, StringTag::getAsString).collect(Collectors.toList());
 		return new ResearchEntry(key, sections, icons, meta, betterParents, in, name, desc, x, y);
 	}
 	
@@ -145,7 +145,7 @@ public class ResearchEntry{
 	 * 		The world the player is in.
 	 * @return A stream containing the pins of contained sections.
 	 */
-	public Stream<Pin> getAllPins(World world){
+	public Stream<Pin> getAllPins(Level world){
 		return sections().stream().flatMap(section -> section.getPins(sections.indexOf(section), world, this));
 	}
 }

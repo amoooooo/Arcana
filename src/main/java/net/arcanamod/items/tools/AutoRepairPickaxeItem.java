@@ -1,20 +1,20 @@
 package net.arcanamod.items.tools;
 
-import mcp.MethodsReturnNonnullByDefault;
 import net.arcanamod.items.AutoRepair;
-import net.minecraft.entity.Entity;
-import net.minecraft.item.IItemTier;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.PickaxeItem;
-import net.minecraft.world.World;
+import net.minecraft.MethodsReturnNonnullByDefault;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.PickaxeItem;
+import net.minecraft.world.item.Tier;
+import net.minecraft.world.level.Level;
 
 import javax.annotation.ParametersAreNonnullByDefault;
 
 @ParametersAreNonnullByDefault
 @MethodsReturnNonnullByDefault
-public class AutoRepairPickaxeItem extends PickaxeItem{
+public class AutoRepairPickaxeItem extends PickaxeItem {
 	
-	public AutoRepairPickaxeItem(IItemTier tier, int attackDamage, float attackSpeed, Properties builder){
+	public AutoRepairPickaxeItem(Tier tier, int attackDamage, float attackSpeed, Properties builder){
 		super(tier, attackDamage, attackSpeed, builder);
 	}
 	
@@ -26,7 +26,7 @@ public class AutoRepairPickaxeItem extends PickaxeItem{
 		return AutoRepair.shouldCauseBlockBreakReset(oldStack, newStack);
 	}
 	
-	public void inventoryTick(ItemStack stack, World world, Entity entity, int itemSlot, boolean isSelected){
+	public void inventoryTick(ItemStack stack, Level world, Entity entity, int itemSlot, boolean isSelected){
 		super.inventoryTick(stack, world, entity, itemSlot, isSelected);
 		AutoRepair.inventoryTick(stack, world, entity, itemSlot, isSelected);
 	}

@@ -1,17 +1,17 @@
 package net.arcanamod.systems.spell.modules;
 
 import com.google.common.collect.Maps;
-import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.arcanamod.aspects.Aspect;
 import net.arcanamod.systems.spell.SpellState;
 import net.arcanamod.systems.spell.modules.circle.DoubleModifierCircle;
 import net.arcanamod.systems.spell.modules.circle.SinModifierCircle;
 import net.arcanamod.systems.spell.modules.circle.SingleModifierCircle;
 import net.arcanamod.systems.spell.modules.core.*;
-import net.minecraft.client.renderer.ItemRenderer;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.INBT;
-import net.minecraft.nbt.ListNBT;
+import net.minecraft.client.renderer.entity.ItemRenderer;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 
 import java.awt.*;
 import java.lang.reflect.Constructor;
@@ -32,7 +32,7 @@ public abstract class SpellModule {
 	public boolean unplaced = false;
 
 	// Generates a SpellModule from NBT, including all of its bound modules.
-	public static SpellModule fromNBTFull(CompoundNBT spellNBT, int deepness) {
+	public static SpellModule fromNBTFull(CompoundTag spellNBT, int deepness) {
 		Constructor<?> constructor;
 		SpellModule createdModule = null;
 		if (spellNBT.contains("name")) {
@@ -47,14 +47,14 @@ public abstract class SpellModule {
 			if (!spellNBT.contains("data")) {
 				createdModule = null;
 			} else {
-				CompoundNBT data = spellNBT.getCompound("data");
+				CompoundTag data = spellNBT.getCompound("data");
 				createdModule.fromNBT(data);
 			}
 		}
 		if (createdModule != null && spellNBT.contains("bound")) {
-			for (INBT inbt : ((ListNBT) Objects.requireNonNull(spellNBT.get("bound")))) {
-				if (inbt instanceof CompoundNBT) {
-					CompoundNBT compound = ((CompoundNBT) inbt);
+			for (Tag inbt : ((ListTag) Objects.requireNonNull(spellNBT.get("bound")))) {
+				if (inbt instanceof CompoundTag) {
+					CompoundTag compound = ((CompoundTag) inbt);
 					SpellModule next = SpellModule.fromNBTFull(compound, ++deepness);
 					if (next != null) {
 						next.setParent(createdModule);
@@ -66,13 +66,13 @@ public abstract class SpellModule {
 	}
 
 	// Generates a CompoundNBT representing this module, including bound modules.
-	public CompoundNBT toNBTFull(CompoundNBT compound, int deepness) {
+	public CompoundTag toNBTFull(CompoundTag compound, int deepness) {
 		compound.putString("name", getName());
-		compound.put("data", toNBT(new CompoundNBT()));
-		ListNBT boundNBT = new ListNBT();
+		compound.put("data", toNBT(new CompoundTag()));
+		ListTag boundNBT = new ListTag();
 		for (SpellModule module : bound) {
 			if (module != null) {
-				CompoundNBT moduleNBT = new CompoundNBT();
+				CompoundTag moduleNBT = new CompoundTag();
 				module.toNBTFull(moduleNBT, ++deepness);
 				boundNBT.add(moduleNBT);
 			}
@@ -193,13 +193,13 @@ public abstract class SpellModule {
 	}
 
 	// Fills this module with values from a CompoundNBT
-	public void fromNBT(CompoundNBT compound) {
+	public void fromNBT(CompoundTag compound) {
 		x = compound.getInt("x");
 		y = compound.getInt("y");
 	}
 
 	// Writes the values of this module to the input CompoundNBT and returns it.
-	public CompoundNBT toNBT(CompoundNBT compound) {
+	public CompoundTag toNBT(CompoundTag compound) {
 		compound.putInt("x", x);
 		compound.putInt("y", y);
 		return compound;
@@ -248,10 +248,10 @@ public abstract class SpellModule {
 	public boolean mouseDown(int x, int y) { return false; }
 
 	// Called when rendering a floating module under the mouse.
-	public void renderUnderMouse(int x, int y, ItemRenderer itemRenderer, boolean floating, MatrixStack stack) { }
+	public void renderUnderMouse(int x, int y, ItemRenderer itemRenderer, boolean floating, PoseStack stack) { }
 
 	// Renders the module as a member of the SpellState board.
-	public void renderInMinigame(int mouseX, int mouseY, ItemRenderer itemRenderer, boolean floating, MatrixStack stack) { }
+	public void renderInMinigame(int mouseX, int mouseY, ItemRenderer itemRenderer, boolean floating, PoseStack stack) { }
 
 	// Returns location where connections from this module should start.
 	public Point getConnectionRenderStart() {

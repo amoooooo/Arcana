@@ -3,13 +3,13 @@ package net.arcanamod.systems.research.impls;
 import com.google.gson.JsonObject;
 import net.arcanamod.Arcana;
 import net.arcanamod.aspects.handlers.AspectHandler;
-import net.arcanamod.containers.ResearchTableContainer;
+import net.arcanamod.containers.ResearchTableMenu;
 import net.arcanamod.containers.slots.AspectSlot;
 import net.arcanamod.systems.research.Puzzle;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.inventory.container.Slot;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.Slot;
 
 import java.util.Collections;
 import java.util.List;
@@ -32,8 +32,8 @@ public class Thaumaturgy extends Puzzle {
 	}
 
 	@Override
-	public CompoundNBT getData() {
-		return new CompoundNBT();
+	public CompoundTag getData() {
+		return new CompoundTag();
 	}
 
 	@Override
@@ -47,7 +47,7 @@ public class Thaumaturgy extends Puzzle {
 	}
 
 	@Override
-	public List<SlotInfo> getItemSlotLocations(PlayerEntity player) {
+	public List<SlotInfo> getItemSlotLocations(Player player) {
 		return Collections.emptyList();
 	}
 
@@ -57,11 +57,11 @@ public class Thaumaturgy extends Puzzle {
 	}
 
 	@Override
-	public boolean validate(List<AspectSlot> aspectSlots, List<Slot> itemSlots, PlayerEntity player, ResearchTableContainer container) {
+	public boolean validate(List<AspectSlot> aspectSlots, List<Slot> itemSlots, Player player, ResearchTableMenu container) {
 		return false;
 	}
 
-	public static Thaumaturgy fromNBT(CompoundNBT passData){
+	public static Thaumaturgy fromNBT(CompoundTag passData){
 		return new Thaumaturgy();
 	}
 }

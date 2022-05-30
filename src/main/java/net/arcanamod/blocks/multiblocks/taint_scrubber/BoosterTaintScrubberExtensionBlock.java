@@ -1,33 +1,33 @@
 package net.arcanamod.blocks.multiblocks.taint_scrubber;
 
 import net.arcanamod.blocks.ArcanaBlocks;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.HorizontalBlock;
-import net.minecraft.item.BlockItemUseContext;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.state.DirectionProperty;
-import net.minecraft.state.StateContainer;
-import net.minecraft.util.Direction;
-import net.minecraft.util.Mirror;
-import net.minecraft.util.Rotation;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.HorizontalDirectionalBlock;
+import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.DirectionProperty;
 
 import javax.annotation.Nonnull;
 
 @SuppressWarnings("deprecation")
 public class BoosterTaintScrubberExtensionBlock extends Block implements ITaintScrubberExtension{
 	
-	public static final DirectionProperty FACING = HorizontalBlock.HORIZONTAL_FACING;
+	public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
 	
 	public BoosterTaintScrubberExtensionBlock(Block.Properties properties){
 		super(properties);
-		this.setDefaultState(this.stateContainer.getBaseState().with(FACING, Direction.NORTH));
+		this.registerDefaultState(this.getStateDefinition().any().setValue(FACING, Direction.NORTH));
 	}
 	
 	@Override
-	public boolean isValidConnection(World world, BlockPos pos){
+	public boolean isValidConnection(Level world, BlockPos pos){
 		if(world.getBlockState(pos.north()).getBlock().equals(ArcanaBlocks.TAINT_SCRUBBER_MK2.get()))
 			return true;
 		if(world.getBlockState(pos.south()).getBlock().equals(ArcanaBlocks.TAINT_SCRUBBER_MK2.get()))
@@ -46,21 +46,21 @@ public class BoosterTaintScrubberExtensionBlock extends Block implements ITaintS
 	 * 		Position of extension
 	 */
 	@Override
-	public void sendUpdate(World world, BlockPos pos){
+	public void sendUpdate(Level world, BlockPos pos){
 	
 	}
 	
 	@Override
-	public void run(World world, BlockPos pos, CompoundNBT compound){}
+	public void run(Level world, BlockPos pos, CompoundTag compound){}
 	
 	@Override
-	public CompoundNBT getShareableData(CompoundNBT compound){
+	public CompoundTag getShareableData(CompoundTag compound){
 		compound.putInt("speed", compound.getInt("speed") + 1);
 		return compound;
 	}
 	
-	public BlockState getStateForPlacement(BlockItemUseContext context){
-		return this.getDefaultState().with(FACING, context.getPlacementHorizontalFacing());
+	public BlockState getStateForPlacement(BlockPlaceContext context){
+		return this.defaultBlockState().setValue(FACING, context.getHorizontalDirection());
 	}
 	
 	/**
@@ -69,7 +69,7 @@ public class BoosterTaintScrubberExtensionBlock extends Block implements ITaintS
 	 */
 	@Nonnull
 	public BlockState rotate(BlockState state, Rotation rot){
-		return state.with(FACING, rot.rotate(state.get(FACING)));
+		return state.setValue(FACING, rot.rotate(state.getValue(FACING)));
 	}
 	
 	/**
@@ -78,11 +78,11 @@ public class BoosterTaintScrubberExtensionBlock extends Block implements ITaintS
 	 */
 	@Nonnull
 	public BlockState mirror(BlockState state, Mirror mirrorIn){
-		return state.rotate(mirrorIn.toRotation(state.get(FACING)));
+		return state.rotate(mirrorIn.getRotation(state.getValue(FACING)));
 	}
 	
-	protected void fillStateContainer(@Nonnull StateContainer.Builder<Block, BlockState> builder){
-		super.fillStateContainer(builder);
+	protected void createBlockStateDefinition(@Nonnull StateDefinition.Builder<Block, BlockState> builder){
+		super.createBlockStateDefinition(builder);
 		builder.add(FACING);
 	}
 }

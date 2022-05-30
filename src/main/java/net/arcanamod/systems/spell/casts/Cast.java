@@ -1,34 +1,31 @@
 package net.arcanamod.systems.spell.casts;
 
+import com.mojang.math.Vector3f;
 import net.arcanamod.aspects.Aspect;
-import net.arcanamod.entities.*;
+import net.arcanamod.entities.BlastEmitterEntity;
+import net.arcanamod.entities.SpellCloudEntity;
+import net.arcanamod.entities.SpellEggEntity;
+import net.arcanamod.entities.SpellTrapEntity;
 import net.arcanamod.items.ArcanaItems;
-import net.arcanamod.systems.spell.Homeable;
 import net.arcanamod.util.Pair;
 import net.arcanamod.util.RayTraceUtils;
-import net.minecraft.entity.*;
-import net.minecraft.entity.item.ItemEntity;
-import net.minecraft.entity.passive.TameableEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.ListNBT;
-import net.minecraft.particles.IParticleData;
-import net.minecraft.particles.ParticleTypes;
-import net.minecraft.potion.EffectInstance;
-import net.minecraft.potion.Effects;
-import net.minecraft.util.ActionResultType;
-import net.minecraft.util.EntityPredicates;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.vector.Vector3d;
-import net.minecraft.util.text.TranslationTextComponent;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.*;
+import net.minecraft.world.entity.ambient.AmbientCreature;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
-import java.awt.*;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -43,7 +40,7 @@ import static net.arcanamod.aspects.Aspects.*;
 @SuppressWarnings("unchecked")
 public abstract class Cast implements ICast {
 
-	public CompoundNBT data = new CompoundNBT();
+	public CompoundTag data = new CompoundTag();
 
 	public Cast(){
 		CastRegistry.addCast(getId(),this);
@@ -51,9 +48,9 @@ public abstract class Cast implements ICast {
 
 	public abstract ResourceLocation getId();
 
-	public abstract ActionResultType useOnBlock(PlayerEntity caster, World world, BlockPos blockTarget);
-	public abstract ActionResultType useOnPlayer(PlayerEntity playerTarget);
-	public abstract ActionResultType useOnEntity(PlayerEntity caster, Entity entityTarget);
+	public abstract InteractionResult useOnBlock(Player caster, Level world, BlockPos blockTarget);
+	public abstract InteractionResult useOnPlayer(Player playerTarget);
+	public abstract InteractionResult useOnEntity(Player caster, Entity entityTarget);
 
 	public static float getArrowVelocity(int charge) {
 		float f = (float)charge / 20.0F;
@@ -66,7 +63,7 @@ public abstract class Cast implements ICast {
 	}
 
 	@Override
-	public void use(UUID spellUUID, World world, PlayerEntity player, Object sender, Pair<Aspect, Aspect> cast, ICast.Action action){
+	public void use(UUID spellUUID, Level world, Player player, Object sender, Pair<Aspect, Aspect> cast, ICast.Action action){
 		/*
 		TODO LIST OF NOT ADDED CASTS:
 		Chaos
@@ -84,28 +81,29 @@ public abstract class Cast implements ICast {
 				int raytraceDistance = 24;
 
  				BlockPos pos = RayTraceUtils.getTargetBlockPos(player, world, raytraceDistance);
- 				Vector3d vec = new Vector3d(pos.getX(),pos.getY(),pos.getZ()).add(0,0.51,0);
+// 				Vector3d vec = new Vector3d(pos.getX(),pos.getY(),pos.getZ()).add(0,0.51,0);
+ 				Vec3 vec = new Vec3(pos.getX(),pos.getY() + 0.51,pos.getZ());
 				if (cast.getSecond() == ENVY) {
 					// enemies killed by the cloud spawn another smaller cloud
 				} else if (cast.getSecond() == LUST) {
 					// slowly moves towards the closest player / passive mob
-					createSpellCloud(player,world,vec,1,1.8f,PlayerEntity.class, CreatureEntity.class);
+					createSpellCloud(player, world, vec,1,1.8f, Player.class, AmbientCreature.class);
 				} else if (cast.getSecond() == SLOTH) {
 					// the cloud last longer
-					createSpellCloud(player,world,vec,1,1.8f);
+					createSpellCloud(player, world, vec,1,1.8f);
 				} else if (cast.getSecond() == PRIDE) {
 					// cloud splits and disopates
 				} else if (cast.getSecond() == GREED) {
 					// slowly moves towards the closest hostile mob
-					createSpellCloud(player,world,vec,1,1.8f,MobEntity.class);
+					createSpellCloud(player, world, vec,1,1.8f, Mob.class);
 				} else if (cast.getSecond() == GLUTTONY) {
 					// the cloud is bigger
-					createSpellCloud(player,world,vec,1,0.8f);
+					createSpellCloud(player, world, vec,1,0.8f);
 				} else if (cast.getSecond() == WRATH) {
 					// creates tornado
 				} else {
 					// Default AIR SPELL
-					createSpellCloud(player,world,vec,0,1f);
+					createSpellCloud(player, world, vec,0,1f);
 				}
 			}
 			if (cast.getFirst() == WATER) {
@@ -120,7 +118,7 @@ public abstract class Cast implements ICast {
 					createAOEBlast(player,world,pos,16.0f,true,true, 1);
 				} else if (cast.getSecond() == LUST) {
 					// cant target hostile mobs
-					createAOEBlast(player,world,pos,8.0f,false,false, 1, MobEntity.class);
+					createAOEBlast(player,world,pos,8.0f,false,false, 1, Mob.class);
 				} else if (cast.getSecond() == SLOTH) {
 					// the AOE slows to a crawl allowing entities to be hit multiple times
 				} else if (cast.getSecond() == PRIDE) {
@@ -128,7 +126,7 @@ public abstract class Cast implements ICast {
 					createAOEBlast(player,world,pos,8.0f,true,false, 3);
 				} else if (cast.getSecond() == GREED) {
 					// can only target hostile mobs
-					createAOEBlast(player,world,pos,8.0f,true,false, 1, MobEntity.class);
+					createAOEBlast(player,world,pos,8.0f,true,false, 1, Mob.class);
 				} else if (cast.getSecond() == GLUTTONY) {
 					// the AOE effect is bigger
 					createAOEBlast(player,world,pos,16.0f,true,false, 1);
@@ -145,7 +143,7 @@ public abstract class Cast implements ICast {
 				- Targets the block / entity hit
 				 */
 				Random random = new Random();
-				if (!world.isRemote) {
+				if (!world.isClientSide()) {
 
 					if (cast.getSecond() == ENVY) {
 						// entities killed fire the same spell to the closest entity
@@ -153,10 +151,12 @@ public abstract class Cast implements ICast {
 						// homes to players / passive mobs
 						SpellEggEntity eggentity = new SpellEggEntity(world, player, this);
 						eggentity.setItem(new ItemStack(ArcanaItems.AMBER.get()));
-						eggentity.shoot(player.getLookVec().getX(), player.getLookVec().getY(), player.getLookVec().getZ(), 1.5F, 1.0F);
-						eggentity.setPosition(eggentity.getPosX(),eggentity.getPosY()-0.5,eggentity.getPosZ());
-						eggentity.enableHoming(PlayerEntity.class, CreatureEntity.class);
-						world.addEntity(eggentity);
+						Vec3 vec3 = player.getViewVector(1.0F);
+						Vector3f vector3f = new Vector3f(vec3);
+						eggentity.shoot(vector3f.x(), vector3f.y(), vector3f.z(), 1.5F, 1.0F);
+						eggentity.setPos(eggentity.getX(),eggentity.getY()-0.5,eggentity.getZ());
+						eggentity.enableHoming(Player.class, AmbientCreature.class);
+						world.addFreshEntity(eggentity);
 					} else if (cast.getSecond() == SLOTH) {
 						// the projectile bounces
 						// TODO: IMPLEMENT THIS
@@ -165,27 +165,33 @@ public abstract class Cast implements ICast {
 						for (int i = 0; i < 3; i++) {
 							SpellEggEntity eggentity = new SpellEggEntity(world, player, this);
 							eggentity.setItem(new ItemStack(ArcanaItems.AMBER.get()));
-							eggentity.shoot(player.getLookVec().getX(), player.getLookVec().getY(), player.getLookVec().getZ(), 0.6F, 20.0F);
-							eggentity.setPosition(eggentity.getPosX(),eggentity.getPosY()-0.5,eggentity.getPosZ());
-							world.addEntity(eggentity);
+							Vec3 vec3 = player.getViewVector(1.0F);
+							Vector3f vector3f = new Vector3f(vec3);
+							eggentity.shoot(vector3f.x(), vector3f.y(), vector3f.z(), 0.6F, 20.0F);
+							eggentity.setPos(eggentity.getX(),eggentity.getY()-0.5,eggentity.getZ());
+							world.addFreshEntity(eggentity);
 						}
 					} else if (cast.getSecond() == GREED) {
 						// homes to hostile mobs
 						SpellEggEntity eggentity = new SpellEggEntity(world, player, this);
 						eggentity.setItem(new ItemStack(ArcanaItems.AMBER.get()));
-						eggentity.shoot(player.getLookVec().getX(), player.getLookVec().getY(), player.getLookVec().getZ(), 1.5F, 1.0F);
-						eggentity.setPosition(eggentity.getPosX(),eggentity.getPosY()-0.5,eggentity.getPosZ());
-						eggentity.enableHoming(MobEntity.class);
-						world.addEntity(eggentity);
+						Vec3 vec3 = player.getViewVector(1.0F);
+						Vector3f vector3f = new Vector3f(vec3);
+						eggentity.shoot(vector3f.x(), vector3f.y(), vector3f.z(), 1.5F, 1.0F);
+						eggentity.setPos(eggentity.getX(),eggentity.getY()-0.5,eggentity.getZ());
+						eggentity.enableHoming(Mob.class);
+						world.addFreshEntity(eggentity);
 					} else if (cast.getSecond() == GLUTTONY) {
 						// acts a flame thrower
 						for (int i = 0; i < 100; i++) {
 							SpellEggEntity eggentity = new SpellEggEntity(world, player, this);
 							eggentity.setItem(new ItemStack(ArcanaItems.AMBER.get()));
-							eggentity.shoot(player.getLookVec().getX(), player.getLookVec().getY(), player.getLookVec().getZ(), 1.5F, 1.0F);
-							eggentity.setPosition(eggentity.getPosX(), eggentity.getPosY() - 0.5, eggentity.getPosZ());
+							Vec3 vec3 = player.getViewVector(1.0F);
+							Vector3f vector3f = new Vector3f(vec3);
+							eggentity.shoot(vector3f.x(), vector3f.y(), vector3f.z(), 1.5F, 1.0F);
+							eggentity.setPos(eggentity.getX(), eggentity.getY() - 0.5, eggentity.getZ());
 							eggentity.setLifespan(80);
-							world.addEntity(eggentity);
+							world.addFreshEntity(eggentity);
 						}
 
 					} else if (cast.getSecond() == WRATH) {
@@ -194,9 +200,11 @@ public abstract class Cast implements ICast {
 						// Default FIRE SPELL
 						SpellEggEntity eggentity = new SpellEggEntity(world, player, this);
 						eggentity.setItem(new ItemStack(ArcanaItems.AMBER.get()));
-						eggentity.shoot(player.getLookVec().getX(), player.getLookVec().getY(), player.getLookVec().getZ(), 1.5F, 1.0F);
-						eggentity.setPosition(eggentity.getPosX(),eggentity.getPosY()-0.5,eggentity.getPosZ());
-						world.addEntity(eggentity);
+						Vec3 vec3 = player.getViewVector(1.0F);
+						Vector3f vector3f = new Vector3f(vec3);
+						eggentity.shoot(vector3f.x(), vector3f.y(), vector3f.z(), 1.5F, 1.0F);
+						eggentity.setPos(eggentity.getX(),eggentity.getY()-0.5,eggentity.getZ());
+						world.addFreshEntity(eggentity);
 					}
 				}
 			}
@@ -219,9 +227,9 @@ public abstract class Cast implements ICast {
 						List<BlockPos> markedBlocks;
 						if (((ItemStack)sender).getOrCreateTag().contains("MarkedBlocks")) {
 							//player.sendMessage(((ListNBT) ((ItemStack) sender).getOrCreateTag().get("MarkedBlocks")).toFormattedComponent());
-							ListNBT listNBT = ((ListNBT) ((ItemStack) sender).getOrCreateTag().get("MarkedBlocks"));
+							ListTag listNBT = ((ListTag) ((ItemStack) sender).getOrCreateTag().get("MarkedBlocks"));
 							markedBlocks = listNBT.stream()
-									.map(inbt -> new BlockPos(((CompoundNBT) inbt).getInt("x"), ((CompoundNBT) inbt).getInt("y"), ((CompoundNBT) inbt).getInt("z"))).collect(Collectors.toList());
+									.map(tag -> new BlockPos(((CompoundTag) tag).getInt("x"), ((CompoundTag) tag).getInt("y"), ((CompoundTag) tag).getInt("z"))).collect(Collectors.toList());
 							for (BlockPos markedBlock : markedBlocks) {
 								useOnBlock(player, world, markedBlock);
 							}
@@ -234,21 +242,21 @@ public abstract class Cast implements ICast {
 
 				} else if (cast.getSecond() == PRIDE) {
 					// targets random nearby blocks ~5
-					BlockPos.getAllInBoxMutable(pos.add(-5, -5, -5), pos.add(5, 5, 5)).forEach(blockPos -> {
-						if (world.rand.nextInt(5) == 2) useOnBlock(player, world, blockPos);
+					BlockPos.betweenClosed(pos.offset(-5, -5, -5), pos.offset(5, 5, 5)).forEach(blockPos -> {
+						if (world.random.nextInt(5) == 2) useOnBlock(player, world, blockPos);
 					});
 				} else if (cast.getSecond() == GREED) {
 					// allows players to target entites, targets the block below them
-					List<Entity> entities = RayTraceUtils.rayTraceEntities(world,player.getPositionVec(),player.getLookVec(), Optional.empty(),Entity.class);
+					List<Entity> entities = RayTraceUtils.rayTraceEntities(world,player.getPosition(1.0F),player.getEyePosition(1.0F), Optional.empty(),Entity.class);
 					for (Entity entity : entities){
-						useOnBlock(player, world,entity.getPosition());
+						useOnBlock(player, world, entity.getOnPos());
 					}
 				} else if (cast.getSecond() == GLUTTONY) {
 					// selects a 7 * 7 * 7 area
-					BlockPos.getAllInBoxMutable(pos.add(-3, -3, -3), pos.add(3, 3, 3)).forEach(blockPos -> useOnBlock(player, world, blockPos));
+					BlockPos.betweenClosed(pos.offset(-3, -3, -3), pos.offset(3, 3, 3)).forEach(blockPos -> useOnBlock(player, world, blockPos));
 				} else if (cast.getSecond() == WRATH) {
 					// Allows you to target entities instead
-					List<Entity> entities = RayTraceUtils.rayTraceEntities(world,player.getPositionVec(),player.getLookVec(),Optional.empty(),Entity.class);
+					List<Entity> entities = RayTraceUtils.rayTraceEntities(world,player.getPosition(1.0F),player.getEyePosition(1.0F),Optional.empty(),Entity.class);
 					for (Entity entity : entities){
 						useOnEntity(player, entity);
 					}
@@ -266,51 +274,51 @@ public abstract class Cast implements ICast {
 
 				if (cast.getSecond() == ENVY) {
 					// targets all nearby players
-					List<PlayerEntity> targets = world.getEntitiesWithinAABB(EntityType.PLAYER,
-							new AxisAlignedBB(maxDistance, maxDistance, maxDistance, maxDistance, maxDistance, maxDistance),
-							EntityPredicates.NOT_SPECTATING);
-					for (PlayerEntity target : targets)
+					List<Player> targets = world.getEntities(EntityType.PLAYER,
+							new AABB(maxDistance, maxDistance, maxDistance, maxDistance, maxDistance, maxDistance),
+							EntitySelector.NO_SPECTATORS);
+					for (Player target : targets)
 						useOnPlayer(target);
 				} else if (cast.getSecond() == LUST) {
 					// targets you and nearby pets
-					List<PlayerEntity> targetsP = world.getEntitiesWithinAABB(EntityType.PLAYER,
-							new AxisAlignedBB(maxDistance, maxDistance, maxDistance, maxDistance, maxDistance, maxDistance),
-							EntityPredicates.NOT_SPECTATING);
-					List<TameableEntity> targetsE = world.getEntitiesWithinAABB(TameableEntity.class,
-							new AxisAlignedBB(maxDistance, maxDistance, maxDistance, maxDistance, maxDistance, maxDistance),
-							EntityPredicates.NOT_SPECTATING);
-					for (TameableEntity target : targetsE)
+					List<Player> targetsP = world.getEntities(EntityType.PLAYER,
+							new AABB(maxDistance, maxDistance, maxDistance, maxDistance, maxDistance, maxDistance),
+							EntitySelector.NO_SPECTATORS);
+					List<TamableAnimal> targetsE = world.getEntitiesOfClass(TamableAnimal.class,
+							new AABB(maxDistance, maxDistance, maxDistance, maxDistance, maxDistance, maxDistance),
+							EntitySelector.NO_SPECTATORS);
+					for (TamableAnimal target : targetsE)
 						useOnEntity(player, target);
-					for (PlayerEntity target : targetsP)
+					for (Player target : targetsP)
 						useOnPlayer(target);
 				} else if (cast.getSecond() == SLOTH) {
 					// lays a mine
-					createSpellCloudTrap(new SpellCloudEntity.CloudVariableGrid(player,world,player.getPositionVec(),0));
+					createSpellCloudTrap(new SpellCloudEntity.CloudVariableGrid(player, world, player.getEyePosition(1.0F),0));
 				} else if (cast.getSecond() == PRIDE) {
 					// targets random nearby entities
-					List<Entity> targetsE = world.getEntitiesWithinAABB(Entity.class,
-							new AxisAlignedBB(maxDistance, maxDistance, maxDistance, maxDistance, maxDistance, maxDistance),
-							EntityPredicates.NOT_SPECTATING);
+					List<Entity> targetsE = world.getEntitiesOfClass(Entity.class,
+							new AABB(maxDistance, maxDistance, maxDistance, maxDistance, maxDistance, maxDistance),
+							EntitySelector.NO_SPECTATORS);
 					for (Entity target : targetsE)
-						if (world.rand.nextInt(5)==2)
+						if (world.random.nextInt(5)==2)
 							useOnEntity(player, target);
 				} else if (cast.getSecond() == GREED) {
 					// targets nearby hostiles
-					List<MobEntity> targetsE = world.getEntitiesWithinAABB(MobEntity.class,
-							new AxisAlignedBB(maxDistance, maxDistance, maxDistance, maxDistance, maxDistance, maxDistance),
-							EntityPredicates.NOT_SPECTATING);
-					for (MobEntity target : targetsE)
+					List<Mob> targetsE = world.getEntitiesOfClass(Mob.class,
+							new AABB(maxDistance, maxDistance, maxDistance, maxDistance, maxDistance, maxDistance),
+							EntitySelector.NO_SPECTATORS);
+					for (Mob target : targetsE)
 						useOnEntity(player, target);
 				} else if (cast.getSecond() == GLUTTONY) {
 					// targets nearby dropped items
-					List<ItemEntity> targetsE = world.getEntitiesWithinAABB(ItemEntity.class,
-							new AxisAlignedBB(maxDistance, maxDistance, maxDistance, maxDistance, maxDistance, maxDistance),
-							EntityPredicates.NOT_SPECTATING);
+					List<ItemEntity> targetsE = world.getEntitiesOfClass(ItemEntity.class,
+							new AABB(maxDistance, maxDistance, maxDistance, maxDistance, maxDistance, maxDistance),
+							EntitySelector.NO_SPECTATORS);
 					for (ItemEntity target : targetsE)
 						useOnEntity(player, target);
 				} else if (cast.getSecond() == WRATH) {
 					// becomes toggalable giving the player a faint glow and repeasts the spell every few seconds
-					player.addPotionEffect(new EffectInstance(Effects.GLOWING,10,1));
+					player.addEffect(new MobEffectInstance(MobEffects.GLOWING,10,1));
 					if (ToggleableCast.toggleableCasts.contains(Pair.of(spellUUID,new ToggleableCast.Impl(t -> useOnPlayer(player),delay))))
 						ToggleableCast.toggleableCasts.remove(Pair.of(spellUUID,new ToggleableCast.Impl(t -> useOnPlayer(player),delay)));
 					ToggleableCast.toggleableCasts.add(Pair.of(spellUUID, new ToggleableCast.Impl(t -> useOnPlayer(player),delay)));
@@ -332,8 +340,8 @@ public abstract class Cast implements ICast {
 					int raytraceDistance = 8;
 					BlockPos pos = RayTraceUtils.getTargetBlockPos(player, world, raytraceDistance);
 					ItemStack stack = ((ItemStack) sender);
-					ListNBT markedBlocksNBT = stack.getOrCreateTag().contains("MarkedBlocks") ? (ListNBT) stack.getOrCreateTag().get("MarkedBlocks") : new ListNBT();
-					CompoundNBT markedBlock = new CompoundNBT();
+					ListTag markedBlocksNBT = stack.getOrCreateTag().contains("MarkedBlocks") ? (ListTag) stack.getOrCreateTag().get("MarkedBlocks") : new ListTag();
+					CompoundTag markedBlock = new CompoundTag();
 					markedBlock.putInt("x", pos.getX());
 					markedBlock.putInt("y", pos.getY());
 					markedBlock.putInt("z", pos.getZ());
@@ -348,7 +356,7 @@ public abstract class Cast implements ICast {
 		SpellTrapEntity trap = new SpellTrapEntity(variableGrid);
 	}
 
-	private void createSpellCloud(PlayerEntity player, World world, Vector3d area, int rMultP, float durMultP) {
+	private void createSpellCloud(Player player, Level world, Vec3 area, int rMultP, float durMultP) {
 		SpellCloudEntity cloud = new SpellCloudEntity(world, area);
 		cloud.setOwner(player);
 		cloud.setDuration((int)((float)(800)*(float)(durMultP)));
@@ -357,9 +365,9 @@ public abstract class Cast implements ICast {
 		cloud.setWaitTime(10);
 		cloud.setRadiusPerTick(-cloud.getRadius() / (float)cloud.getDuration());
 		cloud.setSpell(this);
-		world.addEntity(cloud);
+		world.addFreshEntity(cloud);
 	}
-	private void createSpellCloud(PlayerEntity player, World world, Vector3d area, int rMultP, float durMultP, Class<? extends Entity>... targets) {
+	private void createSpellCloud(Player player, Level world, Vec3 area, int rMultP, float durMultP, Class<? extends Entity>... targets) {
 		SpellCloudEntity cloud = new SpellCloudEntity(world, area);
 		cloud.setOwner(player);
 		cloud.setDuration((int)((float)(800)*(float)(durMultP)));
@@ -369,18 +377,18 @@ public abstract class Cast implements ICast {
 		cloud.setRadiusPerTick(-cloud.getRadius() / (float)cloud.getDuration());
 		cloud.enableHoming(targets);
 		cloud.setSpell(this);
-		world.addEntity(cloud);
+		world.addFreshEntity(cloud);
 	}
 	
-	public void createAOEBlast(PlayerEntity player, World world, BlockPos epicentre, float radius, boolean whitelistMode, boolean canExtend, int waves, @Nullable Class<? extends LivingEntity>... targets){
+	public void createAOEBlast(Player player, Level world, BlockPos epicentre, float radius, boolean whitelistMode, boolean canExtend, int waves, @Nullable Class<? extends LivingEntity>... targets){
 		for (int i = 0; i < waves; i++) {
 			BlastEmitterEntity emitter = new BlastEmitterEntity(world,player,radius);
-			emitter.setPosition(emitter.getPosX(),epicentre.getY()+0.5f,epicentre.getZ());
+			emitter.setPos(emitter.getX(),epicentre.getY()+0.5f,epicentre.getZ());
 			emitter.setCooldown(15*i);
 			emitter.setSpell(this);
 			emitter.setCaster(player);
 			emitter.makeBlackWhiteList(whitelistMode,targets);
-			world.addEntity(emitter);
+			world.addFreshEntity(emitter);
 		}
 	}
 }

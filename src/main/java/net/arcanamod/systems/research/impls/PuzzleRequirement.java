@@ -6,9 +6,9 @@ import net.arcanamod.systems.research.Puzzle;
 import net.arcanamod.systems.research.Requirement;
 import net.arcanamod.systems.research.ResearchBooks;
 import net.arcanamod.systems.research.ResearchEntry;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 
 import static net.arcanamod.Arcana.arcLoc;
 
@@ -22,11 +22,11 @@ public class PuzzleRequirement extends Requirement{
 		this.puzzleId = puzzleId;
 	}
 	
-	public boolean satisfied(PlayerEntity player){
+	public boolean satisfied(Player player){
 		return Researcher.getFrom(player).isPuzzleCompleted(ResearchBooks.puzzles.get(puzzleId));
 	}
 	
-	public void take(PlayerEntity player){
+	public void take(Player player){
 		// no-op
 	}
 	
@@ -34,13 +34,13 @@ public class PuzzleRequirement extends Requirement{
 		return TYPE;
 	}
 	
-	public CompoundNBT data(){
-		CompoundNBT compound = new CompoundNBT();
+	public CompoundTag data(){
+		CompoundTag compound = new CompoundTag();
 		compound.putString("puzzle", puzzleId.toString());
 		return compound;
 	}
 	
-	public boolean onClick(ResearchEntry entry, PlayerEntity player){
+	public boolean onClick(ResearchEntry entry, Player player){
 		Puzzle puzzle = ResearchBooks.puzzles.get(puzzleId);
 		if(!(puzzle instanceof Fieldwork || satisfied(player)))
 			Connection.sendGetNoteHandler(puzzleId, entry.key().toString());

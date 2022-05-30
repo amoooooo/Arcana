@@ -1,9 +1,9 @@
 package net.arcanamod;
 
 import net.arcanamod.aspects.AspectUtils;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.world.World;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 
@@ -22,11 +22,11 @@ public class CommonProxy{
 	public void preInit(FMLCommonSetupEvent event){
 	}
 
-	public PlayerEntity getPlayerOnClient(){
+	public Player getPlayerOnClient(){
 		return null;
 	}
 	
-	public World getWorldOnClient(){
+	public LevelAccessor getWorldOnClient(){
 		return null;
 	}
 	
